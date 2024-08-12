@@ -9,8 +9,8 @@ def electric_smelter(num_furnaces):
     # this covers the splitter and belt tunnel
     splitter_belt_tunnel_width = 4
 
-    # 2 furnaces take up 22 squares
-    return (4 + math.ceil(num_furnaces/2), 11)
+    # 2 electric furnaces take up 33 squares
+    return (4 + math.ceil(num_furnaces/2)*3, 13)
 
 def green_circuit(num_assemblers):
     packs = math.ceil(num_assemblers/2)
@@ -76,6 +76,26 @@ def low_density_structure(num_assemblers):
     # 3 wide for every 2 assemblers
     return (14, 4 + math.ceil(num_assemblers/2)*3)
 
+def min_speed_module(num_assemblers):
+    # height:
+    # - belt above
+    # - inserter
+    # - 3 for assembler
+    # - inserter
+    # - belt below
+    return (7, math.ceil(num_assemblers) * 3 + 5)
+
+def solid_fuel(num_plants):
+    # ??
+    # https://www.factorio.school/view/-L_dgvit-TLeoWF3EL6K
+    return (7, math.ceil(num_plants) * 3 + 5)
+
+def rocket_fuel(num_assemblers):
+    # https://www.factorio.school/view/-NfTYT_f1XATK_h5dfoz
+    # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/7adea92fb28bef85a361d46b6976064aedf817f5/
+    # each one takes up 7 - pipe, 3 assembler, 2 belts, inserter
+    return (7, math.ceil(num_assemblers) * 3 + 5)
+
 grid_size = (150, 150)
 
 # 2 rocket parts a minute
@@ -108,6 +128,14 @@ blocks = {
     "Sulfuric Acid": (15, 10),
 
     "Low Density Structure": low_density_structure(13.4),
+
+    "Speed Module": min_speed_module(10),
+
+    "Solid Fuel": solid_fuel(6.7),
+    "Rocket Fuel": rocket_fuel(13.4),
+    "Rocket Control Unit": electric_smelter(10),
+
+    "Rocket": (10, 10),
 }
 
 print("blocks: {}", blocks)
@@ -115,24 +143,25 @@ print("blocks: {}", blocks)
 connections = [
     ("Coal Mine", "Copper Smelting"),
     ("Copper Mine", "Copper Smelting"),
+
     ("Coal Mine", "Iron Smelting"),
     ("Ore Mine", "Iron Smelting"),
+
     ("Iron Smelting", "Steel Smelting"),
     ("Coal Mine", "Steel Smelting"),
 
     ("Iron Smelting", "Green Circuit Assembly"),
     ("Copper Smelting", "Green Circuit Assembly"),
 
-    ("Copper Smelting", "Red Circuit Assembly"),
-
-    ("Heavy Oil Cracking", "Light Oil Cracking"),
-
     ("Advanced Oil Processing", "Plastic"),
     ("Light Oil Cracking", "Plastic"),
     ("Coal Mine", "Plastic"),
 
-    ("Plastic", "Red Circuit Assembly"),
+    ("Copper Smelting", "Red Circuit Assembly"),
     ("Green Circuit Assembly", "Red Circuit Assembly"),
+    ("Plastic", "Red Circuit Assembly"),
+
+    ("Heavy Oil Cracking", "Light Oil Cracking"),
 
     ("Water", "Advanced Oil Processing"),
     ("Oil", "Advanced Oil Processing"),
@@ -151,4 +180,21 @@ connections = [
     ("Steel Smelting", "Low Density Structure"),
     ("Plastic", "Low Density Structure"),
     ("Copper Smelting", "Low Density Structure"),
+
+    ("Green Circuit Assembly", "Speed Module"),
+    ("Red Circuit Assembly", "Speed Module"),
+
+    ("Advanced Oil Processing", "Solid Fuel"),
+    ("Heavy Oil Cracking", "Solid Fuel"),
+
+    ("Advanced Oil Processing", "Rocket Fuel"),
+    ("Heavy Oil Cracking", "Rocket Fuel"),
+    ("Solid Fuel", "Rocket Fuel"),
+
+    ("Speed Module", "Rocket Control Unit"),
+    ("Blue Circuit Assembly", "Rocket Control Unit"),
+
+    ("Rocket Fuel", "Rocket"),
+    ("Low Density Structure", "Rocket"),
+    ("Rocket Control Unit", "Rocket"),
 ]

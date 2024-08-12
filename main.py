@@ -117,7 +117,7 @@ def main():
     args = parser.parse_args()
 
     # Set the solver time based on the --fast flag
-    max_time = 15.0 if args.fast else 60.0
+    max_time = 15.0 if args.fast else 120.0
 
     # Example usage with named blocks
     optimal_positions = optimize_factory_layout(max_time, blocks, connections, grid_size)
