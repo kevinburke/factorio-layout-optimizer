@@ -1,10 +1,12 @@
+import argparse
+
 from ortools.sat.python import cp_model
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from factorio import blocks, connections, grid_size
 
-def optimize_factory_layout(blocks, connections, grid_size):
+def optimize_factory_layout(max_time, blocks, connections, grid_size):
     model = cp_model.CpModel()
 
     # Create a list of block names for indexing
@@ -67,7 +69,7 @@ def optimize_factory_layout(blocks, connections, grid_size):
 
     # Solve
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = 60.0  # Limit solve time to 60 seconds
+    solver.parameters.max_time_in_seconds = max_time
     status = solver.Solve(model)
 
     print(f"Solver status: {solver.StatusName(status)}")
@@ -83,29 +85,50 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size):
     ax.set_ylim(0, grid_size[1])
     ax.invert_yaxis()
 
+    # Draw blocks
     for name, (width, height) in blocks.items():
         x, y = optimal_positions[name]
         rect = patches.Rectangle((x, y), width, height, fill=False, edgecolor='blue')
         ax.add_patch(rect)
         ax.text(x + width/2, y + height/2, name, ha='center', va='center', wrap=True)
 
+    # Draw directed connections
     for name1, name2 in connections:
         x1, y1 = optimal_positions[name1]
         x2, y2 = optimal_positions[name2]
         w1, h1 = blocks[name1]
         w2, h2 = blocks[name2]
-        ax.plot([x1 + w1/2, x2 + w2/2], [y1 + h1/2, y2 + h2/2], 'r-')
+
+        # Calculate the center points of the blocks
+        start_x, start_y = x1 + w1/2, y1 + h1/2
+        end_x, end_y = x2 + w2/2, y2 + h2/2
+
+        # Draw an arrow from the center of name1 to the center of name2
+        ax.annotate('', xy=(end_x, end_y), xytext=(start_x, start_y),
+                    arrowprops=dict(arrowstyle='->', color='red', lw=1.5),
+                    )
 
     plt.tight_layout()
     plt.show()
 
-# Example usage with named blocks
-optimal_positions = optimize_factory_layout(blocks, connections, grid_size)
-if optimal_positions:
-    for name, (x, y) in optimal_positions.items():
-        print(f"{name}: position ({x}, {y})")
-else:
-    print("No solution found")
+def main():
+    parser = argparse.ArgumentParser(description="Optimize Factorio factory layout")
+    parser.add_argument("--fast", action="store_true", help="Use fast mode (15 seconds solver time)")
+    args = parser.parse_args()
 
-if optimal_positions:
-    visualize_layout(blocks, connections, optimal_positions, grid_size)
+    # Set the solver time based on the --fast flag
+    max_time = 15.0 if args.fast else 60.0
+
+    # Example usage with named blocks
+    optimal_positions = optimize_factory_layout(max_time, blocks, connections, grid_size)
+    if optimal_positions:
+        for name, (x, y) in optimal_positions.items():
+            print(f"{name}: position ({x}, {y})")
+    else:
+        print("No solution found")
+
+    if optimal_positions:
+        visualize_layout(blocks, connections, optimal_positions, grid_size)
+
+if __name__ == "__main__":
+    main()

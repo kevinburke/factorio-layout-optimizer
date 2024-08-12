@@ -42,6 +42,14 @@ def red_circuit(num_assemblers):
     # 4 height for every 2 copper coil assemblers
     return (14, math.ceil(copper_coils/2)*4 + math.ceil(num_assemblers/2)*4)
 
+def blue_circuit(num_assemblers):
+    # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/be6ac0d54651537214601211c9d98984a16d9d3e/position/0
+    # center belt is red circuits
+    # left/right belts are green circuits
+    # outer belts are blue circuits
+    packs = math.ceil(num_assemblers/4)
+    return (17, packs*9)
+
 def plastic(num_chemical_plants):
     # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/265ce01196a689ef5ea6eae916b84b812b06784e/
     # petroleum gas above the chem plant
@@ -53,13 +61,32 @@ def plastic(num_chemical_plants):
     # use both sides of belt
     return (4*math.ceil(num_chemical_plants/2), 12)
 
-grid_size = (100, 100)
+def advanced_oil(num_oil_plants):
+    # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/4f84c953ea8d3e035c9b706ade311a99ebc0faaf/position/1
+    extra_space_width = 20
 
+    return (extra_space_width + 6*math.ceil(num_oil_plants), 12)
+
+def low_density_structure(num_assemblers):
+    # https://www.factorio.school/view/-M5Dma3GTTR-aB704Bxa
+    # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/15759bc3e06d659beff0c65b9ff95fff4efcec40/
+
+    # 14 high
+    # 4 extra wide
+    # 3 wide for every 2 assemblers
+    return (14, 4 + math.ceil(num_assemblers/2)*3)
+
+grid_size = (150, 150)
+
+# 2 rocket parts a minute
 # https://kirkmcdonald.github.io/calc.html#data=1-1-19&items=rocket-part:r:2
 blocks = {
     "Copper Mine": (1, 1),
     "Ore Mine": (1, 1),
     "Coal Mine": (1, 1),
+    "Water": (1, 1),
+    "Oil": (1, 1),
+
     "Copper Smelting": electric_smelter(49.4),
     "Iron Smelting": electric_smelter(26.2),
     "Steel Smelting": electric_smelter(5.4),
@@ -69,6 +96,18 @@ blocks = {
     # No separate copper coil block - all assembly part of green or red circuits
     "Green Circuit Assembly": green_circuit(13),
     "Red Circuit Assembly": red_circuit(28),
+    "Blue Circuit Assembly": blue_circuit(4.5),
+
+    "Advanced Oil Processing": advanced_oil(4.7),
+
+    # need 1.5 light oil crackers
+    "Light Oil Cracking": (10, 10),
+    # 1.2 crackers
+    "Heavy Oil Cracking": (10, 10),
+
+    "Sulfuric Acid": (15, 10),
+
+    "Low Density Structure": low_density_structure(13.4),
 }
 
 print("blocks: {}", blocks)
@@ -81,9 +120,35 @@ connections = [
     ("Iron Smelting", "Steel Smelting"),
     ("Coal Mine", "Steel Smelting"),
 
+    ("Iron Smelting", "Green Circuit Assembly"),
     ("Copper Smelting", "Green Circuit Assembly"),
+
     ("Copper Smelting", "Red Circuit Assembly"),
+
+    ("Heavy Oil Cracking", "Light Oil Cracking"),
+
+    ("Advanced Oil Processing", "Plastic"),
+    ("Light Oil Cracking", "Plastic"),
     ("Coal Mine", "Plastic"),
+
     ("Plastic", "Red Circuit Assembly"),
     ("Green Circuit Assembly", "Red Circuit Assembly"),
+
+    ("Water", "Advanced Oil Processing"),
+    ("Oil", "Advanced Oil Processing"),
+
+    ("Advanced Oil Processing", "Light Oil Cracking"),
+    ("Advanced Oil Processing", "Heavy Oil Cracking"),
+
+    ("Water", "Sulfuric Acid"),
+    ("Iron Smelting", "Sulfuric Acid"),
+    ("Light Oil Cracking", "Sulfuric Acid"),
+
+    ("Sulfuric Acid", "Blue Circuit Assembly"),
+    ("Green Circuit Assembly", "Blue Circuit Assembly"),
+    ("Red Circuit Assembly", "Blue Circuit Assembly"),
+
+    ("Steel Smelting", "Low Density Structure"),
+    ("Plastic", "Low Density Structure"),
+    ("Copper Smelting", "Low Density Structure"),
 ]
