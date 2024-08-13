@@ -158,7 +158,7 @@ connections = [
     # TODO - two entrances here, left and right
     ("Copper Smelting", "Green Circuit Assembly", "RM", "BL"),
 
-    ("Advanced Oil Processing", "Plastic", "RM", "TL"),
+    ("Advanced Oil Processing", "Plastic", "TL", "TL"),
     ("Light Oil Cracking", "Plastic", "RM", "TL"),
     ("Coal Mine", "Plastic", "MM", "LM"),
 
@@ -168,31 +168,31 @@ connections = [
 
     ("Heavy Oil Cracking", "Light Oil Cracking", "MM", "MM"),
 
-    ("Water", "Advanced Oil Processing", "MM", "MM"),
-    ("Oil", "Advanced Oil Processing", "MM", "MM"),
+    ("Water", "Advanced Oil Processing", "TL", "TL"),
+    ("Oil", "Advanced Oil Processing", "TL", "TL"),
 
-    ("Advanced Oil Processing", "Light Oil Cracking", "MM", "MM"),
-    ("Advanced Oil Processing", "Heavy Oil Cracking", "MM", "MM"),
+    ("Advanced Oil Processing", "Light Oil Cracking", "TL", "MM"),
+    ("Advanced Oil Processing", "Heavy Oil Cracking", "TL", "MM"),
 
     ("Water", "Sulfuric Acid", "MM", "MM"),
-    ("Iron Smelting", "Sulfuric Acid", "MM", "MM"),
+    ("Iron Smelting", "Sulfuric Acid", "RM", "MM"),
     ("Light Oil Cracking", "Sulfuric Acid", "MM", "MM"),
 
-    ("Sulfuric Acid", "Blue Circuit Assembly", "MM", "MM"),
-    ("Green Circuit Assembly", "Blue Circuit Assembly", "MM", "MM"),
-    ("Red Circuit Assembly", "Blue Circuit Assembly", "MM", "MM"),
+    ("Sulfuric Acid", "Blue Circuit Assembly", "MM", "LT"),
+    ("Green Circuit Assembly", "Blue Circuit Assembly", "BM", "BM"),
+    ("Red Circuit Assembly", "Blue Circuit Assembly", "BM", "BM"),
 
-    ("Steel Smelting", "Low Density Structure", "MM", "MM"),
-    ("Plastic", "Low Density Structure", "MM", "MM"),
-    ("Copper Smelting", "Low Density Structure", "MM", "MM"),
+    ("Steel Smelting", "Low Density Structure", "RM", "MM"),
+    ("Plastic", "Low Density Structure", "RM", "MM"),
+    ("Copper Smelting", "Low Density Structure", "RM", "MM"),
 
-    ("Green Circuit Assembly", "Speed Module", "MM", "MM"),
-    ("Red Circuit Assembly", "Speed Module", "MM", "MM"),
+    ("Green Circuit Assembly", "Speed Module", "BM", "MM"),
+    ("Red Circuit Assembly", "Speed Module", "BM", "MM"),
 
-    ("Advanced Oil Processing", "Solid Fuel", "MM", "MM"),
+    ("Advanced Oil Processing", "Solid Fuel", "TL", "MM"),
     ("Heavy Oil Cracking", "Solid Fuel", "MM", "MM"),
 
-    ("Advanced Oil Processing", "Rocket Fuel", "MM", "MM"),
+    ("Advanced Oil Processing", "Rocket Fuel", "TL", "MM"),
     ("Heavy Oil Cracking", "Rocket Fuel", "MM", "MM"),
     ("Solid Fuel", "Rocket Fuel", "MM", "MM"),
 

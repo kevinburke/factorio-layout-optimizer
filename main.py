@@ -75,17 +75,17 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
                 model.AddBoolOr([b1_left_of_b2, b2_left_of_b1, b1_above_b2, b2_above_b1])
 
     def get_connection_point(model, name, pos, x, y, width, height):
-        if pos == "LM":
+        if pos == "LM" or pos == "ML":
             return x, model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
-        elif pos == "TR":
+        elif pos == "TR" or pos == "RT":
             return x + width, y
         elif pos == "BL":
             return x, y + height
-        elif pos == "TL":
+        elif pos == "TL" or pos == "LT":
             return x, y
         elif pos == "BR":
             return x + width, y + height
-        elif pos == "RM":
+        elif pos == "RM" or pos == "MR":
             return x + width, model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
         elif pos == "TM":
             return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), y
@@ -158,17 +158,17 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
         return None
 
 def get_connection_point(x, y, width, height, position):
-    if position == "LM":
+    if position == "LM" or position == "ML":
         return x, y + height / 2
-    elif position == "TR":
+    elif position == "TR" or position == "RT":
         return x + width, y
     elif position == "BL":
         return x, y + height
-    elif position == "TL":
+    elif position == "TL" or position == "LT":
         return x, y
-    elif position == "BR":
+    elif position == "BR" or position == "RB":
         return x + width, y + height
-    elif position == "RM":
+    elif position == "RM" or position == "MR":
         return x + width, y + height / 2
     elif position == "TM":
         return x + width / 2, y
