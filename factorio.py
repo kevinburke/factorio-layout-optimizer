@@ -1,6 +1,8 @@
 import math
 
 def electric_smelter(num_furnaces):
+    # https://www.factorio.school/view/-LM4FAS99hG83TEAl_9T
+
     # we use a basic model and assume you replace stone with electric (so
     # smelter can occupy same physical layout)
 
@@ -9,7 +11,7 @@ def electric_smelter(num_furnaces):
     # this covers the splitter and belt tunnel
     splitter_belt_tunnel_width = 4
 
-    # 2 electric furnaces take up 33 squares
+    # 2 electric furnaces take up 39 squares
     return (4 + math.ceil(num_furnaces/2)*3, 13)
 
 def green_circuit(num_assemblers):
@@ -96,7 +98,7 @@ def rocket_fuel(num_assemblers):
     # each one takes up 7 - pipe, 3 assembler, 2 belts, inserter
     return (7, math.ceil(num_assemblers) * 3 + 5)
 
-grid_size = (150, 150)
+grid_size = (200, 200)
 
 # 2 rocket parts a minute
 # https://kirkmcdonald.github.io/calc.html#data=1-1-19&items=rocket-part:r:2
@@ -140,61 +142,64 @@ blocks = {
 
 print("blocks: {}", blocks)
 
+rotatable_blocks = {name for name, (w, h) in blocks.items() if w != h and w > 5 and h > 5}
+
 connections = [
-    ("Coal Mine", "Copper Smelting"),
-    ("Copper Mine", "Copper Smelting"),
+    ("Coal Mine", "Copper Smelting", "MM", "LM"),
+    ("Copper Mine", "Copper Smelting", "MM", "LM"),
 
-    ("Coal Mine", "Iron Smelting"),
-    ("Ore Mine", "Iron Smelting"),
+    ("Coal Mine", "Iron Smelting", "MM", "LM"),
+    ("Ore Mine", "Iron Smelting", "MM", "LM"),
 
-    ("Iron Smelting", "Steel Smelting"),
-    ("Coal Mine", "Steel Smelting"),
+    ("Iron Smelting", "Steel Smelting", "RM", "LM"),
+    ("Coal Mine", "Steel Smelting", "MM", "LM"),
 
-    ("Iron Smelting", "Green Circuit Assembly"),
-    ("Copper Smelting", "Green Circuit Assembly"),
+    ("Iron Smelting", "Green Circuit Assembly", "RM", "BM"),
+    # TODO - two entrances here, left and right
+    ("Copper Smelting", "Green Circuit Assembly", "RM", "BL"),
 
-    ("Advanced Oil Processing", "Plastic"),
-    ("Light Oil Cracking", "Plastic"),
-    ("Coal Mine", "Plastic"),
+    ("Advanced Oil Processing", "Plastic", "RM", "TL"),
+    ("Light Oil Cracking", "Plastic", "RM", "TL"),
+    ("Coal Mine", "Plastic", "MM", "LM"),
 
-    ("Copper Smelting", "Red Circuit Assembly"),
-    ("Green Circuit Assembly", "Red Circuit Assembly"),
-    ("Plastic", "Red Circuit Assembly"),
+    ("Copper Smelting", "Red Circuit Assembly", "RM", "BM"),
+    ("Green Circuit Assembly", "Red Circuit Assembly", "BM", "BM"),
+    ("Plastic", "Red Circuit Assembly", "RM", "BM"),
 
-    ("Heavy Oil Cracking", "Light Oil Cracking"),
+    ("Heavy Oil Cracking", "Light Oil Cracking", "MM", "MM"),
 
-    ("Water", "Advanced Oil Processing"),
-    ("Oil", "Advanced Oil Processing"),
+    ("Water", "Advanced Oil Processing", "MM", "MM"),
+    ("Oil", "Advanced Oil Processing", "MM", "MM"),
 
-    ("Advanced Oil Processing", "Light Oil Cracking"),
-    ("Advanced Oil Processing", "Heavy Oil Cracking"),
+    ("Advanced Oil Processing", "Light Oil Cracking", "MM", "MM"),
+    ("Advanced Oil Processing", "Heavy Oil Cracking", "MM", "MM"),
 
-    ("Water", "Sulfuric Acid"),
-    ("Iron Smelting", "Sulfuric Acid"),
-    ("Light Oil Cracking", "Sulfuric Acid"),
+    ("Water", "Sulfuric Acid", "MM", "MM"),
+    ("Iron Smelting", "Sulfuric Acid", "MM", "MM"),
+    ("Light Oil Cracking", "Sulfuric Acid", "MM", "MM"),
 
-    ("Sulfuric Acid", "Blue Circuit Assembly"),
-    ("Green Circuit Assembly", "Blue Circuit Assembly"),
-    ("Red Circuit Assembly", "Blue Circuit Assembly"),
+    ("Sulfuric Acid", "Blue Circuit Assembly", "MM", "MM"),
+    ("Green Circuit Assembly", "Blue Circuit Assembly", "MM", "MM"),
+    ("Red Circuit Assembly", "Blue Circuit Assembly", "MM", "MM"),
 
-    ("Steel Smelting", "Low Density Structure"),
-    ("Plastic", "Low Density Structure"),
-    ("Copper Smelting", "Low Density Structure"),
+    ("Steel Smelting", "Low Density Structure", "MM", "MM"),
+    ("Plastic", "Low Density Structure", "MM", "MM"),
+    ("Copper Smelting", "Low Density Structure", "MM", "MM"),
 
-    ("Green Circuit Assembly", "Speed Module"),
-    ("Red Circuit Assembly", "Speed Module"),
+    ("Green Circuit Assembly", "Speed Module", "MM", "MM"),
+    ("Red Circuit Assembly", "Speed Module", "MM", "MM"),
 
-    ("Advanced Oil Processing", "Solid Fuel"),
-    ("Heavy Oil Cracking", "Solid Fuel"),
+    ("Advanced Oil Processing", "Solid Fuel", "MM", "MM"),
+    ("Heavy Oil Cracking", "Solid Fuel", "MM", "MM"),
 
-    ("Advanced Oil Processing", "Rocket Fuel"),
-    ("Heavy Oil Cracking", "Rocket Fuel"),
-    ("Solid Fuel", "Rocket Fuel"),
+    ("Advanced Oil Processing", "Rocket Fuel", "MM", "MM"),
+    ("Heavy Oil Cracking", "Rocket Fuel", "MM", "MM"),
+    ("Solid Fuel", "Rocket Fuel", "MM", "MM"),
 
-    ("Speed Module", "Rocket Control Unit"),
-    ("Blue Circuit Assembly", "Rocket Control Unit"),
+    ("Speed Module", "Rocket Control Unit", "MM", "MM"),
+    ("Blue Circuit Assembly", "Rocket Control Unit", "MM", "MM"),
 
-    ("Rocket Fuel", "Rocket"),
-    ("Low Density Structure", "Rocket"),
-    ("Rocket Control Unit", "Rocket"),
+    ("Rocket Fuel", "Rocket", "MM", "MM"),
+    ("Low Density Structure", "Rocket", "MM", "MM"),
+    ("Rocket Control Unit", "Rocket", "MM", "MM"),
 ]
