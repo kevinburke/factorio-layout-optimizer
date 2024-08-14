@@ -97,6 +97,9 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
     total_distance = model.NewIntVar(0, grid_size[0] * grid_size[1] * len(connections), 'total_distance')
     distances = []
     for name1, name2, pos1, pos2 in connections:
+        if name1 not in positions or name2 not in positions:
+            # connections lays out all Factorio connections, we don't need this
+            continue
         x1, y1 = positions[name1]
         x2, y2 = positions[name2]
         w1, h1 = sizes[name1]
@@ -195,8 +198,11 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size):
 
     # Draw connections
     for name1, name2, pos1, pos2 in connections:
-        x1, y1, is_rotated1 = optimal_positions[name1]
-        x2, y2, is_rotated2 = optimal_positions[name2]
+        try:
+            x1, y1, is_rotated1 = optimal_positions[name1]
+            x2, y2, is_rotated2 = optimal_positions[name2]
+        except KeyError:
+            continue
         w1, h1 = blocks[name1]
         w2, h2 = blocks[name2]
 
@@ -234,7 +240,7 @@ def main():
     max_time = 15.0 if args.fast else 240.0
 
     print("Attempting to solve without rotation...")
-    optimal_positions = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time // 2, allow_rotation=False)
+    optimal_positions = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time, allow_rotation=False)
 
     if optimal_positions is None:
         print("No solution found without rotation. Attempting to solve with rotation...")

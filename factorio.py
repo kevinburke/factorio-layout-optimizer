@@ -12,11 +12,21 @@ def electric_smelter(num_furnaces):
     splitter_belt_tunnel_width = 4
 
     # 2 electric furnaces take up 39 squares
-    return (4 + math.ceil(num_furnaces/2)*3, 13)
+
+    # 12 smelters on each side fills a yellow belt
+    # 24 smelters on each side fills a red belt
+
+    # https://steamcommunity.com/sharedfiles/filedetails/?id=862972621
+    num_furnaces = math.ceil(num_furnaces)
+    if num_furnaces < (24 * 2):
+        return (13, 4 + math.ceil(num_furnaces/2*3))
+    num_stacks = math.ceil(num_furnaces / 48)
+    return (13*num_stacks, 4 + 24*3)
 
 def green_circuit(num_assemblers):
     packs = math.ceil(num_assemblers/2)
 
+    # https://www.factorio.school/view/-KoqgcmWqjJGLf6csjL4
     # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/af8b75847d0714575989e1efac4f8cc5e7470f9d/position/0
     first_value = min(26, packs * 13)
 
@@ -33,9 +43,11 @@ def green_circuit(num_assemblers):
 def red_circuit(num_assemblers):
     # inner belt: left side red circuits, right side half green, half plastic
     # outer belt: one side copper, one side coils
+    # https://www.factorio.school/view/-Kp6eLXuhwCqXBXr0ltW
     # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/87805c2ea48b411ef0f8e561758f6229ffb04cda/position/0
     # https://imgur.com/T5WlY0M
     # need one copper coil for every 6 red circuits
+    num_assemblers = math.ceil(num_assemblers)
     copper_coils = math.ceil(num_assemblers/6)
     if copper_coils == 1:
         # 8 wide, 4 for copper, 4 per red assembler
@@ -58,16 +70,15 @@ def plastic(num_chemical_plants):
     # plastic out on top belt
     # copper on bottom belt
     if num_chemical_plants <= 3:
-        return (4*num_chemical_plants, 7)
+        return (4*math.ceil(num_chemical_plants), 7)
 
     # use both sides of belt
     return (4*math.ceil(num_chemical_plants/2), 12)
 
 def advanced_oil(num_oil_plants):
-    # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/4f84c953ea8d3e035c9b706ade311a99ebc0faaf/position/1
-    extra_space_width = 20
-
-    return (extra_space_width + 6*math.ceil(num_oil_plants), 12)
+    # https://www.factorio.school/view/-LZpCwcZo6mMnV7TZdG1
+    # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/6dfc4516b341d0bdbbc56c22a2a74b65b28535a7/
+    return (22, 2+5+(5+1)*math.ceil(num_oil_plants))
 
 def low_density_structure(num_assemblers):
     # https://www.factorio.school/view/-M5Dma3GTTR-aB704Bxa
@@ -100,44 +111,130 @@ def rocket_fuel(num_assemblers):
 
 grid_size = (200, 200)
 
-# 2 rocket parts a minute
-# https://kirkmcdonald.github.io/calc.html#data=1-1-19&items=rocket-part:r:2
-blocks = {
+# 2 rocket parts a minute, full rocket silo in 10 minutes
+# https://kirkmcdonald.github.io/calc.html#tab=graph&data=1-1-19&items=rocket-part:r:2,rocket-silo:r:1/10
+rocket_blocks = {
     "Copper Mine": (1, 1),
     "Ore Mine": (1, 1),
     "Coal Mine": (1, 1),
     "Water": (1, 1),
     "Oil": (1, 1),
+    "Stone": (1, 1),
 
-    "Copper Smelting": electric_smelter(49.4),
-    "Iron Smelting": electric_smelter(26.2),
-    "Steel Smelting": electric_smelter(5.4),
+    "Copper Smelting": electric_smelter(72.3),
+    "Iron Smelting": electric_smelter(58.6),
+    "Steel Smelting": electric_smelter(21.4),
+    "Stone Smelting": electric_smelter(1.4),
 
-    "Plastic": plastic(3.2),
+    "Plastic": plastic(3.9),
 
     # No separate copper coil block - all assembly part of green or red circuits
-    "Green Circuit Assembly": green_circuit(13),
-    "Red Circuit Assembly": red_circuit(28),
-    "Blue Circuit Assembly": blue_circuit(4.5),
+    "Green Circuit Assembly": green_circuit(21.7),
+    "Red Circuit Assembly": red_circuit(36),
+    "Blue Circuit Assembly": blue_circuit(8.9),
 
-    "Advanced Oil Processing": advanced_oil(4.7),
+    "Advanced Oil Processing": advanced_oil(5.6),
 
+    # these are included in the Advanced Oil processing footprint
     # need 1.5 light oil crackers
-    "Light Oil Cracking": (10, 10),
+    "Light Oil Cracking": (1, 1),
     # 1.2 crackers
-    "Heavy Oil Cracking": (10, 10),
+    "Heavy Oil Cracking": (1, 1),
 
+    "Sulfur": plastic(1),
     "Sulfuric Acid": (15, 10),
 
     "Low Density Structure": low_density_structure(13.4),
 
     "Speed Module": min_speed_module(10),
 
+    "Electric Engine Unit": plastic(4.5),
+    "Concrete": plastic(2.3),
+
     "Solid Fuel": solid_fuel(6.7),
     "Rocket Fuel": rocket_fuel(13.4),
     "Rocket Control Unit": electric_smelter(10),
 
+    "Rocket Silo Assembler": (6, 6),
     "Rocket": (10, 10),
+}
+
+# https://kirkmcdonald.github.io/calc.html#zip=dYxBDsIwDAR/01MiWkBCRMpjjGvaVZM6SpwDvweOINAcZ3aNbnGpVNZhJqM4+RfXASa5ReqmmQy6+8aQncUX4i3UcBpd0gXNwD8Ur5LBlD7VPUxHV6rOnf9cdkOCPb5nF1eVNzHfkPRdHs7jEw==
+blocks = {
+    "Copper Mine": (1, 1),
+    "Ore Mine": (1, 1),
+    "Coal Mine": (1, 1),
+    "Water": (1, 1),
+    "Oil": (1, 1),
+    "Stone Mine": (1, 1),
+
+    "Copper Smelting": electric_smelter(80.4),
+    "Iron Smelting": electric_smelter(108.6),
+    "Steel Smelting": electric_smelter(60),
+    "Stone Smelting": electric_smelter(3.7),
+
+    "Advanced Oil Processing": advanced_oil(6.1),
+    # 1.2 crackers
+    "Heavy Oil Cracking": (10, 10),
+    # need 4.9 light oil crackers - these are covered in advanced oil
+    "Light Oil Cracking": (10, 10),
+
+    "Plastic": plastic(4.9),
+
+    "Green Circuit Assembly": green_circuit(21.5),
+    "Red Circuit Assembly": red_circuit(43),
+    "Blue Circuit Assembly": blue_circuit(7.8),
+
+    # This is covered as part of Yellow Science
+    # "Low Density Structure": low_density_structure(20),
+
+    # 1 gear assembler
+    "Red Science": (19, 12),
+
+    # 2 gear assemblers
+    # 1 inserter assembler
+    # 1 belt assembler
+    "Green Science": (18, 16),
+
+    # 10 engine assemblers
+    # 1 pipe assembler
+    # 1 gear assembler
+    "Blue Science": (25, 20),
+    # "Blue Science": blue_science(12),
+
+    # 7 purple science uses:
+    # 3 rail assemblers
+    # 2 furnace assemblers
+    # 5 productivity module assemblers
+    # 2 iron assemblers
+    "Purple Science": (33, 15),
+
+    # 4 engine assemblers
+    # 4 electric engine assemblers
+    # 7 flying robot frames
+    "Yellow Science": (41, 32),
+
+    # 0.2
+    "Sulfuric Acid": plastic(1),
+
+    # 0.3 - covered in advanced oil
+    "Lubricant": plastic(1),
+
+    "Battery": plastic(1.4),
+
+    # yellow science covers 4 of 5.6
+    "Electric Engine Unit": plastic(3),
+
+    "Sulfur": plastic(1),
+
+    "Concrete": plastic(1.7),
+
+    "Solid Fuel": solid_fuel(6.7),
+    "Rocket Fuel": rocket_fuel(13.4),
+    "Rocket Control Unit": electric_smelter(10),
+    "Rocket": (11, 9),
+
+    "Lab": (19, 24),
 }
 
 print("blocks: {}", blocks)
@@ -148,21 +245,24 @@ connections = [
     ("Coal Mine", "Copper Smelting", "MM", "LM"),
     ("Copper Mine", "Copper Smelting", "MM", "LM"),
 
-    ("Coal Mine", "Iron Smelting", "MM", "LM"),
-    ("Ore Mine", "Iron Smelting", "MM", "LM"),
+    ("Coal Mine", "Iron Smelting", "MM", "BM"),
+    ("Ore Mine", "Iron Smelting", "MM", "BM"),
 
-    ("Iron Smelting", "Steel Smelting", "RM", "LM"),
+    ("Iron Smelting", "Steel Smelting", "BM", "BM"),
     ("Coal Mine", "Steel Smelting", "MM", "LM"),
 
-    ("Iron Smelting", "Green Circuit Assembly", "RM", "BM"),
+    ("Stone Mine", "Stone Smelting", "RM", "LM"),
+    ("Coal Mine", "Stone Smelting", "MM", "LM"),
+
+    ("Iron Smelting", "Green Circuit Assembly", "BM", "BM"),
     # TODO - two entrances here, left and right
-    ("Copper Smelting", "Green Circuit Assembly", "RM", "BL"),
+    ("Copper Smelting", "Green Circuit Assembly", "BM", "BL"),
 
     ("Advanced Oil Processing", "Plastic", "TL", "TL"),
     ("Light Oil Cracking", "Plastic", "RM", "TL"),
     ("Coal Mine", "Plastic", "MM", "LM"),
 
-    ("Copper Smelting", "Red Circuit Assembly", "RM", "BM"),
+    ("Copper Smelting", "Red Circuit Assembly", "BM", "BM"),
     ("Green Circuit Assembly", "Red Circuit Assembly", "BM", "BM"),
     ("Plastic", "Red Circuit Assembly", "RM", "BM"),
 
@@ -174,20 +274,60 @@ connections = [
     ("Advanced Oil Processing", "Light Oil Cracking", "TL", "MM"),
     ("Advanced Oil Processing", "Heavy Oil Cracking", "TL", "MM"),
 
+    ("Water", "Sulfur", "MM", "MM"),
+    ("Advanced Oil Processing", "Sulfur", "MM", "MM"),
+
+    ("Advanced Oil Processing", "Lubricant", "MM", "MM"),
+
     ("Water", "Sulfuric Acid", "MM", "MM"),
-    ("Iron Smelting", "Sulfuric Acid", "RM", "MM"),
-    ("Light Oil Cracking", "Sulfuric Acid", "MM", "MM"),
+    ("Iron Smelting", "Sulfuric Acid", "BM", "MM"),
+    ("Sulfur", "Sulfuric Acid", "MM", "MM"),
 
     ("Sulfuric Acid", "Blue Circuit Assembly", "MM", "LT"),
     ("Green Circuit Assembly", "Blue Circuit Assembly", "BM", "BM"),
     ("Red Circuit Assembly", "Blue Circuit Assembly", "BM", "BM"),
 
-    ("Steel Smelting", "Low Density Structure", "RM", "MM"),
+    ("Steel Smelting", "Low Density Structure", "BM", "MM"),
     ("Plastic", "Low Density Structure", "RM", "MM"),
-    ("Copper Smelting", "Low Density Structure", "RM", "MM"),
+    ("Copper Smelting", "Low Density Structure", "BM", "MM"),
 
     ("Green Circuit Assembly", "Speed Module", "BM", "MM"),
     ("Red Circuit Assembly", "Speed Module", "BM", "MM"),
+
+    ("Iron Smelting", "Red Science", "BM", "TR"),
+    ("Copper Smelting", "Red Science", "BM", "TR"),
+
+    ("Iron Smelting", "Green Science", "BM", "TR"),
+    ("Green Circuit Assembly", "Green Science", "RM", "TR"),
+
+    ("Iron Smelting", "Blue Science", "BM", "TL"),
+    ("Steel Smelting", "Blue Science", "BM", "TM"),
+    ("Red Circuit Assembly", "Blue Science", "BM", "TR"),
+    ("Sulfur", "Blue Science", "MM", "TR"),
+
+    ("Lubricant", "Yellow Science", "MM", "TL"),
+    ("Green Circuit Assembly", "Yellow Science", "MM", "MM"),
+    ("Steel Smelting", "Yellow Science", "BM", "TM"),
+    ("Iron Smelting", "Yellow Science", "BM", "TL"),
+    ("Plastic", "Yellow Science", "MM", "MM"),
+    ("Copper Smelting", "Yellow Science", "BM", "TR"),
+    ("Battery", "Yellow Science", "MM", "TL"),
+    ("Blue Circuit Assembly", "Yellow Science", "MM", "TM"),
+
+    ("Steel Smelting", "Purple Science", "BM", "TL"),
+    ("Iron Smelting", "Purple Science", "BM", "TL"),
+    ("Stone Mine", "Purple Science", "RM", "TL"),
+    ("Stone Smelting", "Purple Science", "BM", "TM"),
+    ("Red Circuit Assembly", "Purple Science", "BM", "TM"),
+    ("Green Circuit Assembly", "Purple Science", "BM", "TM"),
+
+    ("Red Science", "Lab", "TL", "BL"),
+    ("Green Science", "Lab", "TL", "BL"),
+    ("Blue Science", "Lab", "TR", "BL"),
+    ("Yellow Science", "Lab", "TM", "BL"),
+    ("Purple Science", "Lab", "TR", "BL"),
+
+    ("Sulfuric Acid", "Battery", "MM", "MM"),
 
     ("Advanced Oil Processing", "Solid Fuel", "TL", "MM"),
     ("Heavy Oil Cracking", "Solid Fuel", "MM", "MM"),
@@ -198,6 +338,20 @@ connections = [
 
     ("Speed Module", "Rocket Control Unit", "MM", "MM"),
     ("Blue Circuit Assembly", "Rocket Control Unit", "MM", "MM"),
+
+    ("Water", "Concrete", "MM", "MM"),
+    ("Iron Ore", "Concrete", "MM", "MM"),
+    ("Stone Smelting", "Concrete", "BM", "MM"),
+
+    ("Lubricant", "Electric Engine Unit", "MM", "TL"),
+    ("Green Circuit Assembly", "Electric Engine Unit", "MM", "MM"),
+    # hack - this reuses the engine assemblers from blue science
+    ("Blue Science", "Electric Engine Unit", "MM", "MM"),
+
+    ("Concrete", "Rocket Silo Assembler", "MM", "MM"),
+    ("Electric Engine Unit", "Rocket Silo Assembler", "MM", "MM"),
+    ("Blue Circuit Assembly", "Rocket Silo Assembler", "MM", "MM"),
+    ("Steel Smelting", "Rocket Silo Assembler", "BM", "MM"),
 
     ("Rocket Fuel", "Rocket", "MM", "MM"),
     ("Low Density Structure", "Rocket", "MM", "MM"),
