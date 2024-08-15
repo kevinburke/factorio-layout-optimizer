@@ -150,12 +150,13 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
 
     print(f"Solver status: {solver.StatusName(status)}")
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f"Total distance: {solver.Value(total_distance)}")
+        total_distance_value = solver.Value(total_distance)
+        print(f"Total distance: {total_distance_value}")
         return {name: (solver.Value(pos[0]), solver.Value(pos[1]), solver.BooleanValue(rotations[name]))
-                for name, pos in positions.items()}
+                for name, pos in positions.items()}, total_distance_value
     else:
         print("No solution found within the time limit.")
-        return None
+        return None, None
 
 def get_connection_point(x, y, width, height, position):
     if position == "LM" or position == "ML":
@@ -195,7 +196,7 @@ def estimate_text_height(text, font_prop, width):
     lines = [text[i:i+chars_per_line] for i in range(0, len(text), chars_per_line)]
     return len(lines) * font_size * 1.2  # 1.2 for line spacing
 
-def visualize_layout(blocks, connections, optimal_positions, grid_size):
+def visualize_layout(blocks, connections, optimal_positions, grid_size, total_distance):
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.set_xlim(0, grid_size[0])
     ax.set_ylim(0, grid_size[1])
@@ -277,6 +278,13 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size):
                     arrowprops=dict(arrowstyle='->', color='red', lw=1.5),
                     annotation_clip=False)
 
+    watermark_text = f"github.com/kevinburke/factorio-layout-optimizer\ndistance: {total_distance}"
+    ax.text(0.99, 0.01, watermark_text,
+            horizontalalignment='right',
+            verticalalignment='bottom',
+            transform=ax.transAxes,
+            fontsize=8, alpha=0.7)
+
     plt.tight_layout()
     plt.show()
 
@@ -307,16 +315,16 @@ def main():
     max_time = 15.0 if args.fast else args.time
 
     print("Attempting to solve without rotation...")
-    optimal_positions = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time, allow_rotation=False)
+    optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time, allow_rotation=False)
 
     if optimal_positions is None:
         print("No solution found without rotation. Attempting to solve with rotation...")
-        optimal_positions = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time // 2, allow_rotation=True)
+        optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time // 2, allow_rotation=True)
 
     if optimal_positions:
         for name, (x, y, is_rotated) in optimal_positions.items():
             print(f"{name}: position ({x}, {y}), {'rotated' if is_rotated else 'not rotated'}")
-        visualize_layout(blocks, connections, optimal_positions, grid_size)
+        visualize_layout(blocks, connections, optimal_positions, grid_size, total_distance)
     else:
         print("No solution found in either attempt.")
 
