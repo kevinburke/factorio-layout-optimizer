@@ -45,8 +45,9 @@ solution for the problem. The SAT solver is part of Google's operations research
 tooling library.
 
 A block has a width and height. You can customize the blocks in `factorio.py`
-- we have two starter blocks, one which has the requirements to build 2 rocket
-parts per minute, and one which can get you all the sciences.
+&mdash; we have two starter blocks, one which has the requirements to build 2
+rocket parts per minute, and one which can get you all the sciences. A block has
+a width and a height.
 
 ```python
 blocks = {
@@ -54,9 +55,8 @@ blocks = {
     "Copper Mine": (1, 1),
     "Stone Mine": (1, 1),
 
-    "Copper Smelting": electric_smelter(80.4),
-    "Iron Smelting": electric_smelter(108.6),
-    "Steel Smelting": electric_smelter(60),
+    "Red Science": (19, 12),
+    "Green Science": (18, 16),
 ```
 
 And then we define a series of "connections" between each of the blocks. Each
