@@ -4,6 +4,11 @@ This project arose because I constantly felt like I was making poor decisions
 with where I placed everything in my base. This is a pretty simple attempt to
 minimize belt distance between different parts of your base.
 
+<img
+src="https://github.com/kevinburke/factorio-layout-optimizer/blob/main/graphs/labs-and-rocket.png?raw=true"
+alt="Optimized Factorio base placement"
+/>
+
 ### Usage
 
 ```
