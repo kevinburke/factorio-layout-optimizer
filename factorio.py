@@ -109,7 +109,7 @@ def rocket_fuel(num_assemblers):
     # each one takes up 7 - pipe, 3 assembler, 2 belts, inserter
     return (7, math.ceil(num_assemblers) * 3 + 5)
 
-grid_size = (200, 200)
+grid_size = (250, 200)
 
 # 2 rocket parts a minute, full rocket silo in 10 minutes
 # https://kirkmcdonald.github.io/calc.html#tab=graph&data=1-1-19&items=rocket-part:r:2,rocket-silo:r:1/10
@@ -185,6 +185,13 @@ blocks = {
     "Red Circuit Assembly": red_circuit(43),
     "Blue Circuit Assembly": blue_circuit(7.8),
 
+    # https://www.factorio.school/view/-M3UFESzD4DDkv8E__6l
+    "Inserter Mall": (7, 28),
+
+    # https://www.factorio.school/view/-L8geV1--kQGYWiMW4v6
+    # Add some height for iron gear assembler
+    "Belt Mall": (16, 18),
+
     # This is covered as part of Yellow Science
     # "Low Density Structure": low_density_structure(20),
 
@@ -237,7 +244,7 @@ blocks = {
     "Lab": (19, 24),
 }
 
-print("blocks: {}", blocks)
+print("blocks: {}".format(blocks))
 
 rotatable_blocks = {name for name, (w, h) in blocks.items() if w != h and w > 5 and h > 5}
 
@@ -257,6 +264,12 @@ connections = [
     ("Iron Smelting", "Green Circuit Assembly", "BM", "BM"),
     # TODO - two entrances here, left and right
     ("Copper Smelting", "Green Circuit Assembly", "BM", "BL"),
+
+    ("Iron Smelting", "Inserter Mall", "BM", "BL"),
+    ("Green Circuit Assembly", "Inserter Mall", "BM", "BR"),
+
+    ("Iron Smelting", "Belt Mall", "BM", "TM"),
+    ("Green Circuit Assembly", "Belt Mall", "BM", "TL"),
 
     ("Advanced Oil Processing", "Plastic", "TL", "TL"),
     ("Light Oil Cracking", "Plastic", "RM", "TL"),

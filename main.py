@@ -1,17 +1,14 @@
 import argparse
 import math
-
-from ortools.sat.python import cp_model
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-
-from factorio import blocks, connections, grid_size, rotatable_blocks
-
-import argparse
 import random
+
 from ortools.sat.python import cp_model
+from matplotlib.offsetbox import AnchoredText
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from matplotlib.font_manager import FontProperties
+from matplotlib.textpath import TextPath
+from matplotlib.font_manager import FontProperties
 
 from factorio import blocks, connections, grid_size, rotatable_blocks
 
@@ -181,6 +178,23 @@ def get_connection_point(x, y, width, height, position):
         return x + width / 2, y + height / 2  # Default to center
 
 
+def get_font_property(size):
+    # Try to use Titillium Web first, then DejaVu Sans, then fall back to default sans-serif
+    for font_name in ['DejaVu Sans', 'sans-serif']:
+        try:
+            return FontProperties(family=font_name, size=size)
+        except:
+            continue
+    return FontProperties(family='sans-serif', size=size)
+
+def estimate_text_height(text, font_prop, width):
+    # Estimate text height based on font properties and width
+    font_size = font_prop.get_size_in_points()
+    char_width = font_size * 0.6  # Rough estimate of character width
+    chars_per_line = max(1, int(width / char_width))
+    lines = [text[i:i+chars_per_line] for i in range(0, len(text), chars_per_line)]
+    return len(lines) * font_size * 1.2  # 1.2 for line spacing
+
 def visualize_layout(blocks, connections, optimal_positions, grid_size):
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.set_xlim(0, grid_size[0])
@@ -194,7 +208,37 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size):
             width, height = height, width
         rect = patches.Rectangle((x, y), width, height, fill=False, edgecolor='blue')
         ax.add_patch(rect)
-        ax.text(x + width/2, y + height/2, name, ha='center', va='center', wrap=True)
+
+        # Create text with auto-wrapping and size adjustment
+        max_fontsize = 12
+        min_fontsize = 6
+
+        best_text = None
+        best_fontsize = min_fontsize
+
+        for fontsize in range(max_fontsize, min_fontsize-1, -1):
+            font_prop = get_font_property(fontsize)
+            estimated_height = estimate_text_height(name, font_prop, width * 0.9)
+
+            if estimated_height <= height * 0.9:
+                best_fontsize = fontsize
+                break
+
+        # Create the text with the best font size
+        font_prop = get_font_property(best_fontsize)
+        wrapped_text = wrap_text(name, width * 0.9, font_prop)
+        best_text = ax.text(x + width/2, y + height/2, '\n'.join(wrapped_text),
+                            ha='center', va='center', fontproperties=font_prop,
+                            wrap=True)
+
+        # Truncate text if it's still too tall
+        while len(wrapped_text) > 1:
+            estimated_height = estimate_text_height('\n'.join(wrapped_text), font_prop, width * 0.9)
+            if estimated_height <= height * 0.9:
+                break
+            wrapped_text = wrapped_text[:-1]
+            wrapped_text[-1] += '...'
+            best_text.set_text('\n'.join(wrapped_text))
 
     # Draw connections
     for name1, name2, pos1, pos2 in connections:
@@ -230,6 +274,23 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size):
 
     plt.tight_layout()
     plt.show()
+
+def wrap_text(text, max_width, font_prop):
+    """Wrap text to fit within a given width."""
+    words = text.split()
+    lines = []
+    current_line = words[0]
+
+    for word in words[1:]:
+        test_line = current_line + " " + word
+        if estimate_text_height(test_line, font_prop, max_width) <= font_prop.get_size_in_points() * 1.2:
+            current_line = test_line
+        else:
+            lines.append(current_line)
+            current_line = word
+
+    lines.append(current_line)
+    return lines
 
 def main():
     parser = argparse.ArgumentParser(description="Optimize Factorio factory layout")
