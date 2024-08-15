@@ -201,6 +201,11 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size):
     ax.set_ylim(0, grid_size[1])
     ax.invert_yaxis()
 
+    ax.set_xticks(range(0, grid_size[0] + 1, 16))
+    ax.set_yticks(range(0, grid_size[1] + 1, 16))
+    ax.grid(which='both', color='lightgray', linestyle='-', linewidth=0.5, alpha=0.5)
+    ax.set_axisbelow(True)
+
     # Draw blocks
     for name, (width, height) in blocks.items():
         x, y, is_rotated = optimal_positions[name]
@@ -295,10 +300,11 @@ def wrap_text(text, max_width, font_prop):
 def main():
     parser = argparse.ArgumentParser(description="Optimize Factorio factory layout")
     parser.add_argument("--fast", action="store_true", help="Use fast mode (15 seconds solver time)")
+    parser.add_argument("--time", type=int, default=240.0, help="Amount of time to run the solver for")
     args = parser.parse_args()
 
     # Set the solver time based on the --fast flag
-    max_time = 15.0 if args.fast else 240.0
+    max_time = 15.0 if args.fast else args.time
 
     print("Attempting to solve without rotation...")
     optimal_positions = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time, allow_rotation=False)
