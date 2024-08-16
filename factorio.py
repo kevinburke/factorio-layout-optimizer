@@ -17,8 +17,10 @@ def electric_smelter(num_furnaces):
     num_furnaces = math.ceil(num_furnaces)
     # "4 + 4" covers belts to and from and associated splitting
     if num_furnaces < (24 * 2):
+        # if we have fewer than 48, just put them in one long line 13 wide
         return (4 + 4 + math.ceil(num_furnaces/2*3), 13)
     num_stacks = math.ceil(num_furnaces / 48)
+    # each "stack" is a collection of 48 furnaces, 24 on either side of a belt
     return (4 + 4 + 24*3, 13*num_stacks)
 
 def green_circuit(num_assemblers):
