@@ -28,17 +28,18 @@ def green_circuit(num_assemblers):
 
     # https://www.factorio.school/view/-KoqgcmWqjJGLf6csjL4
     # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/af8b75847d0714575989e1efac4f8cc5e7470f9d/position/0
-    first_value = min(26, packs * 13)
+    width = min(26, packs * 13)
 
     # lazy https://claude.ai/chat/f936dad3-e427-42a9-b516-da32f2fd5a23
+    # add height at the bottom for input and belts
     if packs <= 2:
-        second_value = 13
+        height = 13 + 4
     elif packs <= 4:
-        second_value = 26
+        height = 26 + 4
     else:
-        second_value = 26 + 13 * ((packs - 1) // 2 - 1)
+        height = 26 + 4 + 13 * ((packs - 1) // 2 - 1)
 
-    return (first_value, second_value)
+    return (width, height)
 
 def red_circuit(num_assemblers):
     # inner belt: left side red circuits, right side half green, half plastic
@@ -57,6 +58,7 @@ def red_circuit(num_assemblers):
     return (math.ceil(copper_coils/2)*4 + math.ceil(num_assemblers/2)*4, 14)
 
 def blue_circuit(num_assemblers):
+    # https://www.factorio.school/view/-KpX1-lyYhE-3-DfxTba
     # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/be6ac0d54651537214601211c9d98984a16d9d3e/position/0
     # center belt is red circuits
     # left/right belts are green circuits
@@ -159,7 +161,13 @@ rocket_blocks = {
     "Rocket": (10, 10),
 }
 
-# https://kirkmcdonald.github.io/calc.html#zip=dYxBDsIwDAR/01MiWkBCRMpjjGvaVZM6SpwDvweOINAcZ3aNbnGpVNZhJqM4+RfXASa5ReqmmQy6+8aQncUX4i3UcBpd0gXNwD8Ur5LBlD7VPUxHV6rOnf9cdkOCPb5nF1eVNzHfkPRdHs7jEw==
+# ratios:
+#
+# https://www.reddit.com/r/factorio/comments/birqnl/boiler_fuel_consumption_and_steam_engine_setup/
+# one steam engine can produce 900kW, two steam engines = 1.8MW
+# Solid fuel: 360 per minute for 40 boilers
+
+# https://kirkmcdonald.github.io/calc.html#zip=dY1NDsIgEIVvwwoiRRMjCYcZp9hOCgyBYeHtbRcuNJq3+96fwD0sDeqqZhAIk9l1U5lKcCrXxnNwVpHE3AMM4QxCXExHigWjqYCbb/5sdeKFuhD+sHCNmRDSp/Xwk9PHwcA/k0MokTy/a1fdGLcoplPiI3m62Deq0GRH7gU=
 blocks = {
     "Copper Mine": (1, 1),
     "Ore Mine": (1, 1),
@@ -168,12 +176,12 @@ blocks = {
     "Oil": (1, 1),
     "Stone Mine": (1, 1),
 
-    "Copper Smelting": electric_smelter(80.4),
-    "Iron Smelting": electric_smelter(108.6),
-    "Steel Smelting": electric_smelter(60),
+    "Copper Smelting": electric_smelter(152.7),
+    "Iron Smelting": electric_smelter(152.9),
+    "Steel Smelting": electric_smelter(72.7),
     "Stone Smelting": electric_smelter(3.7),
 
-    "Advanced Oil Processing": advanced_oil(6.1),
+    "Advanced Oil Processing": advanced_oil(12.5),
     # 1.2 crackers
     "Heavy Oil Cracking": (10, 10),
     # need 4.9 light oil crackers - these are covered in advanced oil
@@ -181,9 +189,9 @@ blocks = {
 
     "Plastic": plastic(4.9),
 
-    "Green Circuit Assembly": green_circuit(21.5),
-    "Red Circuit Assembly": red_circuit(43),
-    "Blue Circuit Assembly": blue_circuit(7.8),
+    "Green Circuit Assembly": green_circuit(26.5),
+    "Red Circuit Assembly": red_circuit(53),
+    "Blue Circuit Assembly": blue_circuit(14.5),
 
     # https://www.factorio.school/view/-M3UFESzD4DDkv8E__6l
     "Inserter Mall": (7, 28),
@@ -195,7 +203,10 @@ blocks = {
     # This is covered as part of Yellow Science
     # "Low Density Structure": low_density_structure(20),
 
+    # tileable science: https://www.factorio.school/view/-KnQ865j-qQ21WoUPbd3
+
     # 1 gear assembler
+    # only really need one side of the belt
     "Red Science": (19, 12),
 
     # 2 gear assemblers
@@ -203,10 +214,12 @@ blocks = {
     # 1 belt assembler
     "Green Science": (18, 16),
 
+    # 12 blue science factories
     # 10 engine assemblers
     # 1 pipe assembler
     # 1 gear assembler
-    "Blue Science": (25, 20),
+    # it's 25x18, but add some buffer for belt input/output
+    "Blue Science": (27, 22),
     # "Blue Science": blue_science(12),
 
     # 7 purple science uses:
@@ -214,6 +227,8 @@ blocks = {
     # 2 furnace assemblers
     # 5 productivity module assemblers
     # 2 iron assemblers
+    #
+    # add a third furnace in here
     "Purple Science": (33, 15),
 
     # 4 engine assemblers
@@ -238,7 +253,7 @@ blocks = {
 
     "Solid Fuel": solid_fuel(6.7),
     "Rocket Fuel": rocket_fuel(13.4),
-    "Rocket Control Unit": electric_smelter(10),
+    "Rocket Control Unit": electric_smelter(20),
     "Rocket": (11, 9),
 
     "Lab": (19, 24),
