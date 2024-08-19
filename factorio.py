@@ -1,5 +1,19 @@
 import math
 
+class Block:
+    def __init__(self, width, height, weight=1):
+        self.width = width
+        self.height = height
+        self.weight = weight
+
+class Connection:
+    def __init__(self, source, target, source_pos, target_pos, weight=1):
+        self.source = source
+        self.target = target
+        self.source_pos = source_pos
+        self.target_pos = target_pos
+        self.weight = weight
+
 def electric_smelter(num_furnaces):
     # https://www.factorio.school/view/-LM4FAS99hG83TEAl_9T
 
@@ -265,10 +279,10 @@ rotatable_blocks = {name for name, (w, h) in blocks.items() if w != h and w > 5 
 
 connections = [
     ("Coal Mine", "Copper Smelting", "MM", "BM"),
-    ("Copper Mine", "Copper Smelting", "MM", "BM"),
+    Connection("Copper Mine", "Copper Smelting", "MM", "BM", 4),
 
     ("Coal Mine", "Iron Smelting", "MM", "LM"),
-    ("Ore Mine", "Iron Smelting", "MM", "LM"),
+    Connection("Ore Mine", "Iron Smelting", "MM", "LM", 4),
 
     ("Iron Smelting", "Steel Smelting", "RM", "LM"),
     ("Coal Mine", "Steel Smelting", "MM", "LM"),
@@ -276,9 +290,9 @@ connections = [
     ("Stone Mine", "Stone Smelting", "RM", "LM"),
     ("Coal Mine", "Stone Smelting", "MM", "LM"),
 
-    ("Iron Smelting", "Green Circuit Assembly", "RM", "BM"),
+    Connection("Iron Smelting", "Green Circuit Assembly", "RM", "BM", 3),
     # TODO - two entrances here, left and right
-    ("Copper Smelting", "Green Circuit Assembly", "RM", "BL"),
+    Connection("Copper Smelting", "Green Circuit Assembly", "RM", "BL", 4),
 
     ("Iron Smelting", "Inserter Mall", "RM", "BL"),
     ("Green Circuit Assembly", "Inserter Mall", "BM", "BR"),

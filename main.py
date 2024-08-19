@@ -10,7 +10,7 @@ from matplotlib.font_manager import FontProperties
 from matplotlib.textpath import TextPath
 from matplotlib.font_manager import FontProperties
 
-from factorio import blocks, connections, grid_size, rotatable_blocks
+from factorio import Block, Connection, blocks, connections, grid_size, rotatable_blocks
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
@@ -34,11 +34,20 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
     model = cp_model.CpModel()
 
     # Variables for block positions and rotations
+    # tuple of (x, y)
     positions = {}
     rotations = {}
+    # tuple of (width, height)
     sizes = {}
+    weights = {}
     all_vars = []
-    for name, (width, height) in blocks.items():
+    for name, block_info in blocks.items():
+        if isinstance(block_info, Block):
+            width, height, weight = block_info.width, block_info.height, block_info.weight
+        else:
+            width, height = block_info
+            weight = 1  # Default weight
+
         positions[name] = (model.NewIntVar(0, grid_size[0] - min(width, height), f'x_{name}'),
                            model.NewIntVar(0, grid_size[1] - min(width, height), f'y_{name}'))
         all_vars.extend(positions[name])
@@ -54,6 +63,7 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
             rotations[name] = model.NewConstant(0)  # Not rotated
             sizes[name] = (model.NewConstant(width), model.NewConstant(height))
         all_vars.append(rotations[name])
+        weights[name] = weight
 
     # Ensure blocks don't overlap
     for name1, _ in blocks.items():
@@ -72,31 +82,63 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
                 model.AddBoolOr([b1_left_of_b2, b2_left_of_b1, b1_above_b2, b2_above_b1])
 
     def get_connection_point(model, name, pos, x, y, width, height):
+        # Assert that all inputs are IntVars
+        assert all(isinstance(var, cp_model.IntVar) for var in [x, y, width, height]), \
+            "All inputs (x, y, width, height) must be IntVars"
+
         if pos == "LM" or pos == "ML":
             return x, model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
         elif pos == "TR" or pos == "RT":
-            return x + width, y
+            x_tr = model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x')
+            model.Add(x_tr == x + width)
+            return x_tr, y
         elif pos == "BL":
-            return x, y + height
+            y_bl = model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
+            model.Add(y_bl == y + height)
+            return x, y_bl
         elif pos == "TL" or pos == "LT":
             return x, y
         elif pos == "BR":
-            return x + width, y + height
+            x_br = model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x')
+            y_br = model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
+            model.Add(x_br == x + width)
+            model.Add(y_br == y + height)
+            return x_br, y_br
         elif pos == "RM" or pos == "MR":
-            return x + width, model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
+            x_rm = model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x')
+            model.Add(x_rm == x + width)
+            return x_rm, model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
         elif pos == "TM":
             return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), y
         elif pos == "BM":
-            return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), y + height
-        else:  # Default to center
+            y_bm = model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
+            model.Add(y_bm == y + height)
+            return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), y_bm
+        elif pos == "MM":  # Default to center
             return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
+        else:
+            raise KeyError(f"Unknown position {pos}, double check variable entry")
 
-    total_distance = model.NewIntVar(0, grid_size[0] * grid_size[1] * len(connections), 'total_distance')
-    distances = []
-    for name1, name2, pos1, pos2 in connections:
+
+
+    total_weighted_distance = model.NewIntVar(0, grid_size[0] * grid_size[1] * len(connections) * 100, 'total_weighted_distance')
+
+    weighted_distances = []
+    unweighted_distances = []
+    connection_infos = []  # Store connection information
+    debug_vars = []  # Store variables for debugging
+
+    for conn in connections:
+        if isinstance(conn, Connection):
+            name1, name2, pos1, pos2, weight = conn.source, conn.target, conn.source_pos, conn.target_pos, conn.weight
+        else:
+            name1, name2, pos1, pos2 = conn
+            weight = 1  # Default weight for tuple connections
+
         if name1 not in positions or name2 not in positions:
-            # connections lays out all Factorio connections, we don't need this
             continue
+        connection_infos.append((f"{name1}-{name2}", weight))  # Store connection name and weight
+
         x1, y1 = positions[name1]
         x2, y2 = positions[name2]
         w1, h1 = sizes[name1]
@@ -105,24 +147,21 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
         start_x, start_y = get_connection_point(model, name1, pos1, x1, y1, w1, h1)
         end_x, end_y = get_connection_point(model, name2, pos2, x2, y2, w2, h2)
 
-        # If start_x or end_x is an IntVar (for TM, BM, or center positions)
-        if isinstance(start_x, cp_model.IntVar):
-            model.Add(start_x >= x1)
-            model.Add(start_x <= x1 + w1)
-        if isinstance(end_x, cp_model.IntVar):
-            model.Add(end_x >= x2)
-            model.Add(end_x <= x2 + w2)
+        model.Add(start_x >= x1)
+        model.Add(start_x <= x1 + w1)
 
-        # If start_y or end_y is an IntVar (for LM, RM, or center positions)
-        if isinstance(start_y, cp_model.IntVar):
-            model.Add(start_y >= y1)
-            model.Add(start_y <= y1 + h1)
-        if isinstance(end_y, cp_model.IntVar):
-            model.Add(end_y >= y2)
-            model.Add(end_y <= y2 + h2)
+        model.Add(end_x >= x2)
+        model.Add(end_x <= x2 + w2)
+
+        model.Add(start_y >= y1)
+        model.Add(start_y <= y1 + h1)
+
+        model.Add(end_y >= y2)
+        model.Add(end_y <= y2 + h2)
 
         dx = model.NewIntVar(-grid_size[0], grid_size[0], f'dx_{name1}_{name2}')
         dy = model.NewIntVar(-grid_size[1], grid_size[1], f'dy_{name1}_{name2}')
+        print(f"dx: {dx}, {end_x - start_x}")
 
         model.Add(dx == end_x - start_x)
         model.Add(dy == end_y - start_y)
@@ -133,10 +172,31 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
         model.AddAbsEquality(abs_dx, dx)
         model.AddAbsEquality(abs_dy, dy)
 
-        distances.append(abs_dx + abs_dy)
+        manhattan_distance = model.NewIntVar(0, grid_size[0] + grid_size[1], f'manhattan_dist_{name1}_{name2}')
+        model.Add(manhattan_distance == abs_dx + abs_dy)
 
-    model.Add(total_distance == sum(distances))
-    model.Minimize(total_distance)
+        weighted_distance = model.NewIntVar(0, (grid_size[0] + grid_size[1]) * 100, f'weighted_dist_{name1}_{name2}')
+        model.AddMultiplicationEquality(weighted_distance, [manhattan_distance, weight])
+
+        weighted_distances.append(weighted_distance)
+        unweighted_distances.append(manhattan_distance)
+
+        debug_vars.append({
+            'name': f"{name1}-{name2}",
+            'dx': dx,
+            'dy': dy,
+            'abs_dx': abs_dx,
+            'abs_dy': abs_dy,
+            'distance': manhattan_distance,
+            'weighted_distance': weighted_distance,
+            'center_x1': x1,
+            'center_y1': y1,
+            'center_x2': x2,
+            'center_y2': y2
+        })
+
+    model.Add(total_weighted_distance == sum(weighted_distances))
+    model.Minimize(total_weighted_distance)
 
     # Solve
     solver = cp_model.CpSolver()
@@ -150,10 +210,62 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
 
     print(f"Solver status: {solver.StatusName(status)}")
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        total_distance_value = solver.Value(total_distance)
-        print(f"Total distance: {total_distance_value}")
+        total_weighted_distance_value = solver.Value(total_weighted_distance)
+        total_unweighted_distance = sum(solver.Value(d) for d in unweighted_distances)
+        print(f"Total weighted distance: {total_weighted_distance_value}")
+        print(f"Total unweighted distance: {total_unweighted_distance}")
+
+        print("Connection details:")
+        for i, ((name, original_weight), weighted_dist, unweighted_dist) in enumerate(zip(connection_infos, weighted_distances, unweighted_distances)):
+            name1, name2 = name.split('-')
+            x1, y1 = solver.Value(positions[name1][0]), solver.Value(positions[name1][1])
+            x2, y2 = solver.Value(positions[name2][0]), solver.Value(positions[name2][1])
+            w1, h1 = solver.Value(sizes[name1][0]), solver.Value(sizes[name1][1])
+            w2, h2 = solver.Value(sizes[name2][0]), solver.Value(sizes[name2][1])
+
+            center_x1 = x1 + w1 // 2
+            center_y1 = y1 + h1 // 2
+            center_x2 = x2 + w2 // 2
+            center_y2 = y2 + h2 // 2
+
+            calc_dx = abs(center_x2 - center_x1)
+            calc_dy = abs(center_y2 - center_y1)
+            calc_distance = calc_dx + calc_dy
+
+            unweighted_value = solver.Value(unweighted_dist)
+            weighted_value = solver.Value(weighted_dist)
+
+            print(f"  {name}:")
+            print(f"    Block 1 ({name1}): position ({x1}, {y1}), size ({w1}, {h1}), center ({center_x1}, {center_y1})")
+            print(f"    Block 2 ({name2}): position ({x2}, {y2}), size ({w2}, {h2}), center ({center_x2}, {center_y2})")
+            print(f"    Calculated |dx|: {calc_dx}, |dy|: {calc_dy}")
+            print(f"    Calculated distance: {calc_distance}")
+            print(f"    Solver distance: {unweighted_value}")
+            print(f"    Weight: {original_weight}")
+            print(f"    Weighted distance: {weighted_value}")
+
+            if calc_distance != unweighted_value:
+                print(f"    WARNING: Calculated distance does not match solver distance!")
+            if weighted_value != unweighted_value * original_weight:
+                print(f"    WARNING: Weighted distance does not match unweighted distance * weight!")
+
+        print("\nDetailed Debug Information:")
+        for vars in debug_vars:
+            print(f"Connection: {vars['name']}")
+            print(f"  center_x1: {solver.Value(vars['center_x1'])}")
+            print(f"  center_y1: {solver.Value(vars['center_y1'])}")
+            print(f"  center_x2: {solver.Value(vars['center_x2'])}")
+            print(f"  center_y2: {solver.Value(vars['center_y2'])}")
+            print(f"  dx: {solver.Value(vars['dx'])}")
+            print(f"  dy: {solver.Value(vars['dy'])}")
+            print(f"  abs_dx: {solver.Value(vars['abs_dx'])}")
+            print(f"  abs_dy: {solver.Value(vars['abs_dy'])}")
+            print(f"  distance: {solver.Value(vars['distance'])}")
+            print(f"  weighted_distance: {solver.Value(vars['weighted_distance'])}")
+            print()
+
         return {name: (solver.Value(pos[0]), solver.Value(pos[1]), solver.BooleanValue(rotations[name]))
-                for name, pos in positions.items()}, total_distance_value
+                for name, pos in positions.items()}, total_unweighted_distance
     else:
         print("No solution found within the time limit.")
         return None, None
@@ -175,8 +287,10 @@ def get_connection_point(x, y, width, height, position):
         return x + width / 2, y
     elif position == "BM":
         return x + width / 2, y + height
-    else:
+    elif position == "MM":
         return x + width / 2, y + height / 2  # Default to center
+    else:
+        raise KeyError(f"Unknown position {position}, double check variable entry")
 
 
 def get_font_property(size):
@@ -247,7 +361,11 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
             best_text.set_text('\n'.join(wrapped_text))
 
     # Draw connections
-    for name1, name2, pos1, pos2 in connections:
+    for conn in connections:
+        if isinstance(conn, Connection):
+            name1, name2, pos1, pos2, weight = conn.source, conn.target, conn.source_pos, conn.target_pos, conn.weight
+        else:
+            name1, name2, pos1, pos2 = conn
         try:
             x1, y1, is_rotated1 = optimal_positions[name1]
             x2, y2, is_rotated2 = optimal_positions[name2]
