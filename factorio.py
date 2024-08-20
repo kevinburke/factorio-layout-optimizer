@@ -125,7 +125,7 @@ def rocket_fuel(num_assemblers):
     # each one takes up 7 - pipe, 3 assembler, 2 belts, inserter
     return (7, math.ceil(num_assemblers) * 3 + 5)
 
-grid_size = (275, 200)
+grid_size = (400, 250)
 
 # 2 rocket parts a minute, full rocket silo in 10 minutes
 # https://kirkmcdonald.github.io/calc.html#tab=graph&data=1-1-19&items=rocket-part:r:2,rocket-silo:r:1/10
@@ -209,6 +209,9 @@ blocks = {
 
     # https://www.factorio.school/view/-M3UFESzD4DDkv8E__6l
     "Inserter Mall": (7, 28),
+
+    "Assembler Mall": (18, 7),
+    "Medium Power Pole Mall": (7, 8),
 
     # https://www.factorio.school/view/-L8geV1--kQGYWiMW4v6
     # Add some height for iron gear assembler
@@ -296,6 +299,14 @@ connections = [
 
     ("Iron Smelting", "Inserter Mall", "RM", "BL"),
     ("Green Circuit Assembly", "Inserter Mall", "BM", "BR"),
+
+    ("Iron Smelting", "Assembler Mall", "RM", "TL"),
+    ("Green Circuit Assembly", "Inserter Mall", "BM", "TL"),
+    ("Steel Smelting", "Assembler Mall", "RM", "BL"),
+
+    ("Iron Smelting", "Medium Power Pole Mall", "RM", "BL"),
+    ("Steel Smelting", "Assembler Mall", "RM", "BR"),
+    ("Copper Smelting", "Medium Power Pole Mall", "BM", "BR"),
 
     ("Iron Smelting", "Belt Mall", "RM", "TM"),
     ("Green Circuit Assembly", "Belt Mall", "BM", "TL"),
