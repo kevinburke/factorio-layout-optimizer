@@ -1,10 +1,12 @@
 import math
 
 class Block:
-    def __init__(self, width, height, weight=1):
+    def __init__(self, width, height, weight=1, fixed_x=None, fixed_y=None):
         self.width = width
         self.height = height
         self.weight = weight
+        self.fixed_x = fixed_x
+        self.fixed_y = fixed_y
 
 class Connection:
     def __init__(self, source, target, source_pos, target_pos, weight=1):
@@ -125,7 +127,6 @@ def rocket_fuel(num_assemblers):
     # each one takes up 7 - pipe, 3 assembler, 2 belts, inserter
     return (7, math.ceil(num_assemblers) * 3 + 5)
 
-grid_size = (400, 250)
 
 # 2 rocket parts a minute, full rocket silo in 10 minutes
 # https://kirkmcdonald.github.io/calc.html#tab=graph&data=1-1-19&items=rocket-part:r:2,rocket-silo:r:1/10
@@ -182,13 +183,16 @@ rocket_blocks = {
 # Solid fuel: 360 per minute for 40 boilers
 
 # https://kirkmcdonald.github.io/calc.html#zip=dY1NDsIgEIVvwwoiRRMjCYcZp9hOCgyBYeHtbRcuNJq3+96fwD0sDeqqZhAIk9l1U5lKcCrXxnNwVpHE3AMM4QxCXExHigWjqYCbb/5sdeKFuhD+sHCNmRDSp/Xwk9PHwcA/k0MokTy/a1fdGLcoplPiI3m62Deq0GRH7gU=
+grid_size = (500, 250)
+max_x, max_y = grid_size
 blocks = {
-    "Copper Mine": (1, 1),
-    "Ore Mine": (1, 1),
-    "Coal Mine": (1, 1),
-    "Water": (1, 1),
-    "Oil": (1, 1),
-    "Stone Mine": (1, 1),
+    # top left is (0, 0)
+    "Copper Mine": Block(1, 1, fixed_x=1, fixed_y=(max_y-3)),
+    "Ore Mine": Block(1, 1, fixed_x=1, fixed_y=max_y-2),
+    "Coal Mine": Block(1, 1,fixed_x=3, fixed_y=max_y-1),
+    "Water": Block(1, 1, fixed_x=max_x//2, fixed_y=max_y-1),
+    "Oil": Block(1, 1, fixed_x=max_x-1, fixed_y=max_y//4),
+    "Stone Mine": Block(1, 1, fixed_x=1, fixed_y=max_y-5),
 
     "Copper Smelting": electric_smelter(152.7),
     "Iron Smelting": electric_smelter(152.9),
@@ -278,7 +282,8 @@ blocks = {
 
 print("blocks: {}".format(blocks))
 
-rotatable_blocks = {name for name, (w, h) in blocks.items() if w != h and w > 5 and h > 5}
+# rotatable_blocks = {name for name, (w, h) in blocks.items() if w != h and w > 5 and h > 5}
+rotatable_blocks = {}
 
 connections = [
     ("Coal Mine", "Copper Smelting", "MM", "BM"),
@@ -301,11 +306,11 @@ connections = [
     ("Green Circuit Assembly", "Inserter Mall", "BM", "BR"),
 
     ("Iron Smelting", "Assembler Mall", "RM", "TL"),
-    ("Green Circuit Assembly", "Inserter Mall", "BM", "TL"),
+    ("Green Circuit Assembly", "Assembler Mall", "BM", "TL"),
     ("Steel Smelting", "Assembler Mall", "RM", "BL"),
 
     ("Iron Smelting", "Medium Power Pole Mall", "RM", "BL"),
-    ("Steel Smelting", "Assembler Mall", "RM", "BR"),
+    ("Steel Smelting", "Medium Power Pole Mall", "RM", "BR"),
     ("Copper Smelting", "Medium Power Pole Mall", "BM", "BR"),
 
     ("Iron Smelting", "Belt Mall", "RM", "TM"),
@@ -330,7 +335,7 @@ connections = [
     ("Water", "Sulfur", "MM", "MM"),
     ("Advanced Oil Processing", "Sulfur", "MM", "MM"),
 
-    ("Advanced Oil Processing", "Lubricant", "MM", "MM"),
+    ("Advanced Oil Processing", "Lubricant", "TL", "MM"),
 
     ("Water", "Sulfuric Acid", "MM", "MM"),
     ("Iron Smelting", "Sulfuric Acid", "RM", "MM"),

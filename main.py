@@ -48,8 +48,12 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
             width, height = block_info
             weight = 1  # Default weight
 
-        positions[name] = (model.NewIntVar(0, grid_size[0] - min(width, height), f'x_{name}'),
-                           model.NewIntVar(0, grid_size[1] - min(width, height), f'y_{name}'))
+        if isinstance(block_info, Block) and block_info.fixed_x is not None:
+            positions[name] = (model.NewConstant(block_info.fixed_x), model.NewConstant(block_info.fixed_y))
+        else:
+            positions[name] = (model.NewIntVar(0, grid_size[0] - min(width, height), f'x_{name}'),
+                               model.NewIntVar(0, grid_size[1] - min(width, height), f'y_{name}'))
+
         all_vars.extend(positions[name])
         if allow_rotation and name in rotatable_blocks:
             rotations[name] = model.NewBoolVar(f'rot_{name}')
@@ -118,8 +122,6 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
             return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
         else:
             raise KeyError(f"Unknown position {pos}, double check variable entry")
-
-
 
     total_weighted_distance = model.NewIntVar(0, grid_size[0] * grid_size[1] * len(connections) * 100, 'total_weighted_distance')
 
@@ -322,7 +324,12 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
     ax.set_axisbelow(True)
 
     # Draw blocks
-    for name, (width, height) in blocks.items():
+    for name, block_info in blocks.items():
+        if isinstance(block_info, Block):
+            width, height = block_info.width, block_info.height
+        else:
+            width, height = block_info
+
         x, y, is_rotated = optimal_positions[name]
         if is_rotated:
             width, height = height, width
@@ -371,8 +378,16 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
             x2, y2, is_rotated2 = optimal_positions[name2]
         except KeyError:
             continue
-        w1, h1 = blocks[name1]
-        w2, h2 = blocks[name2]
+        block_info = blocks[name1]
+        if isinstance(block_info, Block):
+            w1, h1 = block_info.width, block_info.height
+        else:
+            w1, h1 = block_info
+        block_info = blocks[name2]
+        if isinstance(block_info, Block):
+            w2, h2 = block_info.width, block_info.height
+        else:
+            w2, h2 = block_info
 
         if is_rotated1:
             w1, h1 = h1, w1
