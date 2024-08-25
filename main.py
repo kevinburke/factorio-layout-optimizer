@@ -63,9 +63,15 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
             model.Add(sizes[name][1] == height).OnlyEnforceIf(rotations[name].Not())
             model.Add(sizes[name][0] == height).OnlyEnforceIf(rotations[name])
             model.Add(sizes[name][1] == width).OnlyEnforceIf(rotations[name])
+
+            model.Add(positions[name][0] + sizes[name][0] <= grid_size[0])
+            model.Add(positions[name][1] + sizes[name][1] <= grid_size[1])
         else:
             rotations[name] = model.NewConstant(0)  # Not rotated
             sizes[name] = (model.NewConstant(width), model.NewConstant(height))
+
+            model.Add(positions[name][0] + width <= grid_size[0])
+            model.Add(positions[name][1] + height <= grid_size[1])
         all_vars.append(rotations[name])
         weights[name] = weight
 
@@ -85,43 +91,95 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
 
                 model.AddBoolOr([b1_left_of_b2, b2_left_of_b1, b1_above_b2, b2_above_b1])
 
-    def get_connection_point(model, name, pos, x, y, width, height):
+    def get_connection_point(model, name, pos, x, y, width, height, is_rotated):
         # Assert that all inputs are IntVars
         assert all(isinstance(var, cp_model.IntVar) for var in [x, y, width, height]), \
             "All inputs (x, y, width, height) must be IntVars"
+        # return x, y
 
-        if pos == "LM" or pos == "ML":
-            return x, model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
-        elif pos == "TR" or pos == "RT":
-            x_tr = model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x')
-            model.Add(x_tr == x + width)
-            return x_tr, y
-        elif pos == "BL":
-            y_bl = model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
-            model.Add(y_bl == y + height)
-            return x, y_bl
-        elif pos == "TL" or pos == "LT":
-            return x, y
-        elif pos == "BR":
-            x_br = model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x')
-            y_br = model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
-            model.Add(x_br == x + width)
-            model.Add(y_br == y + height)
-            return x_br, y_br
-        elif pos == "RM" or pos == "MR":
-            x_rm = model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x')
-            model.Add(x_rm == x + width)
-            return x_rm, model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
-        elif pos == "TM":
-            return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), y
-        elif pos == "BM":
-            y_bm = model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
-            model.Add(y_bm == y + height)
-            return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), y_bm
-        elif pos == "MM":  # Default to center
-            return model.NewIntVar(0, grid_size[0], f'{name}_{pos}_x'), model.NewIntVar(0, grid_size[1], f'{name}_{pos}_y')
+        conn_x = model.NewIntVar(0, grid_size[0], f'conn_x_{name}_{pos}')
+        conn_y = model.NewIntVar(0, grid_size[1], f'conn_y_{name}_{pos}')
+
+        # Helper function to create midpoint without division
+        def create_midpoint(start, length):
+            mid = model.NewIntVar(0, max(grid_size[0], grid_size[1]), f'mid_{name}_{pos}')
+            model.Add(2 * mid >= 2 * start + length - 1)
+            model.Add(2 * mid <= 2 * start + length)
+            return mid
+
+        if pos == "MM":
+            mid_x = create_midpoint(x, width)
+            mid_y = create_midpoint(y, height)
+            model.Add(conn_x == mid_x)
+            model.Add(conn_y == mid_y)
+            return conn_x, conn_y
         else:
-            raise KeyError(f"Unknown position {pos}, double check variable entry")
+            # Define connection points for non-rotated and rotated states
+            mid_x = create_midpoint(x, width)
+            mid_y = create_midpoint(y, height)
+
+            # Define connection points for non-rotated and rotated states
+            positions = {
+                "TL": [(x, y), (x + width, y)],
+                "TM": [(mid_x, y), (x + width, mid_y)],
+                "TR": [(x + width, y), (x + width, y + height)],
+
+                "ML": [(x, mid_y), (mid_x, y)],
+                "LM": [(x, mid_y), (mid_x, y)],
+
+                "MR": [(x + width, mid_y), (mid_x, y + height)],
+                "RM": [(x + width, mid_y), (mid_x, y + height)],
+
+                "BL": [(x, y + height), (x, y)],
+                "BM": [(mid_x, y + height), (x, mid_y)],
+                "BR": [(x + width, y + height), (x, y + height)]
+            }
+            if pos in positions:
+                px_non_rotated, py_non_rotated = positions[pos][0]
+                px_rotated, py_rotated = positions[pos][1]
+
+                model.Add(conn_x == px_non_rotated).OnlyEnforceIf(is_rotated.Not())
+                model.Add(conn_y == py_non_rotated).OnlyEnforceIf(is_rotated.Not())
+                model.Add(conn_x == px_rotated).OnlyEnforceIf(is_rotated)
+                model.Add(conn_y == py_rotated).OnlyEnforceIf(is_rotated)
+            else:
+                raise ValueError(f"unknown position {pos}")
+        return conn_x, conn_y
+
+        rotated_position = get_rotated_position(pos, is_rotated)
+
+        # if rotated_position == "LM" or rotated_position == "ML":
+            # return x, model.NewIntVar(0, grid_size[1], f'{name}_{rotated_position}_y')
+        # elif rotated_position == "TR" or rotated_position == "RT":
+            # x_tr = model.NewIntVar(0, grid_size[0], f'{name}_{rotated_position}_x')
+            # model.Add(x_tr == x + width)
+            # return x_tr, y
+        # elif rotated_position == "BL":
+            # y_bl = model.NewIntVar(0, grid_size[1], f'{name}_{rotated_position}_y')
+            # model.Add(y_bl == y + height)
+            # return x, y_bl
+        # elif rotated_position == "TL" or rotated_position == "LT":
+            # return x, y
+        # elif rotated_position == "BR":
+            # x_br = model.NewIntVar(0, grid_size[0], f'{name}_{rotated_position}_x')
+            # y_br = model.NewIntVar(0, grid_size[1], f'{name}_{rotated_position}_y')
+            # model.Add(x_br == x + width)
+            # model.Add(y_br == y + height)
+            # return x_br, y_br
+        # elif rotated_position == "RM" or rotated_position == "MR":
+            # x_rm = model.NewIntVar(0, grid_size[0], f'{name}_{rotated_position}_x')
+            # model.Add(x_rm == x + width)
+            # return x_rm, model.NewIntVar(0, grid_size[1], f'{name}_{rotated_position}_y')
+        # elif rotated_position == "TM":
+            # return model.NewIntVar(0, grid_size[0], f'{name}_{rotated_position}_x'), y
+        # elif rotated_position == "BM":
+            # y_bm = model.NewIntVar(0, grid_size[1], f'{name}_{rotated_position}_y')
+            # model.Add(y_bm == y + height)
+            # return model.NewIntVar(0, grid_size[0], f'{name}_{rotated_position}_x'), y_bm
+        # elif rotated_position == "MM":  # Default to center
+            # return model.NewIntVar(0, grid_size[0], f'{name}_{rotated_position}_x'), model.NewIntVar(0, grid_size[1], f'{name}_{rotated_position}_y')
+        # else:
+            # raise KeyError(f"Unknown rotated_positionition {rotated_position}, double check variable entry")
 
     total_weighted_distance = model.NewIntVar(0, grid_size[0] * grid_size[1] * len(connections) * 100, 'total_weighted_distance')
 
@@ -146,8 +204,8 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
         w1, h1 = sizes[name1]
         w2, h2 = sizes[name2]
 
-        start_x, start_y = get_connection_point(model, name1, pos1, x1, y1, w1, h1)
-        end_x, end_y = get_connection_point(model, name2, pos2, x2, y2, w2, h2)
+        start_x, start_y = get_connection_point(model, name1, pos1, x1, y1, w1, h1, rotations[name1])
+        end_x, end_y = get_connection_point(model, name2, pos2, x2, y2, w2, h2, rotations[name2])
 
         model.Add(start_x >= x1)
         model.Add(start_x <= x1 + w1)
@@ -205,74 +263,118 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
     solver.parameters.max_time_in_seconds = max_time
     solver.parameters.num_search_workers = 8
     solver.parameters.log_search_progress = True
+    solver.parameters.randomize_search = True
     solver.parameters.random_seed = random.randint(0, 10000)  # Add randomness
 
     solution_printer = VarArraySolutionPrinter(all_vars)
-    status = solver.Solve(model, solution_printer)
+    best_seen = None
+    best_positions = None
+    for iteration in range(3):
+        status = solver.Solve(model, solution_printer)
 
-    print(f"Solver status: {solver.StatusName(status)}")
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        total_weighted_distance_value = solver.Value(total_weighted_distance)
-        total_unweighted_distance = sum(solver.Value(d) for d in unweighted_distances)
-        print(f"Total weighted distance: {total_weighted_distance_value}")
-        print(f"Total unweighted distance: {total_unweighted_distance}")
+        print(f"Solver status: {solver.StatusName(status)}")
+        if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+            total_weighted_distance_value = solver.Value(total_weighted_distance)
+            if best_seen is None or total_weighted_distance_value < best_seen:
+                best_seen = total_weighted_distance_value
+                best_positions = { name: (
+                    solver.Value(pos[0]),
+                    solver.Value(pos[1]),
+                    solver.BooleanValue(rotations[name])
+                ) for name, pos in positions.items() }
 
-        print("Connection details:")
-        for i, ((name, original_weight), weighted_dist, unweighted_dist) in enumerate(zip(connection_infos, weighted_distances, unweighted_distances)):
-            name1, name2 = name.split('-')
-            x1, y1 = solver.Value(positions[name1][0]), solver.Value(positions[name1][1])
-            x2, y2 = solver.Value(positions[name2][0]), solver.Value(positions[name2][1])
-            w1, h1 = solver.Value(sizes[name1][0]), solver.Value(sizes[name1][1])
-            w2, h2 = solver.Value(sizes[name2][0]), solver.Value(sizes[name2][1])
+                # Add constraints to find solutions close to but different from the current best
+                for name, pos in positions.items():
+                    x, y = pos
+                    curr_x = solver.Value(x)
+                    curr_y = solver.Value(y)
+                    diff_x = model.NewIntVar(-grid_size[0], grid_size[0], f'diff_x_{name}_{iteration}')
+                    diff_y = model.NewIntVar(-grid_size[1], grid_size[1], f'diff_y_{name}_{iteration}')
+                    model.Add(diff_x == x - curr_x)
+                    model.Add(diff_y == y - curr_y)
+                    model.AddAbsEquality(model.NewIntVar(0, 10, f'abs_diff_x_{name}_{iteration}'), diff_x)
+                    model.AddAbsEquality(model.NewIntVar(0, 10, f'abs_diff_y_{name}_{iteration}'), diff_y)
 
-            center_x1 = x1 + w1 // 2
-            center_y1 = y1 + h1 // 2
-            center_x2 = x2 + w2 // 2
-            center_y2 = y2 + h2 // 2
+            total_unweighted_distance = sum(solver.Value(d) for d in unweighted_distances)
 
-            calc_dx = abs(center_x2 - center_x1)
-            calc_dy = abs(center_y2 - center_y1)
-            calc_distance = calc_dx + calc_dy
+            """
+            print(f"Total weighted distance: {total_weighted_distance_value}")
+            print(f"Total unweighted distance: {total_unweighted_distance}")
 
-            unweighted_value = solver.Value(unweighted_dist)
-            weighted_value = solver.Value(weighted_dist)
+            print("Connection details:")
+            for i, ((name, original_weight), weighted_dist, unweighted_dist) in enumerate(zip(connection_infos, weighted_distances, unweighted_distances)):
+                name1, name2 = name.split('-')
+                x1, y1 = solver.Value(positions[name1][0]), solver.Value(positions[name1][1])
+                x2, y2 = solver.Value(positions[name2][0]), solver.Value(positions[name2][1])
+                w1, h1 = solver.Value(sizes[name1][0]), solver.Value(sizes[name1][1])
+                w2, h2 = solver.Value(sizes[name2][0]), solver.Value(sizes[name2][1])
 
-            print(f"  {name}:")
-            print(f"    Block 1 ({name1}): position ({x1}, {y1}), size ({w1}, {h1}), center ({center_x1}, {center_y1})")
-            print(f"    Block 2 ({name2}): position ({x2}, {y2}), size ({w2}, {h2}), center ({center_x2}, {center_y2})")
-            print(f"    Calculated |dx|: {calc_dx}, |dy|: {calc_dy}")
-            print(f"    Calculated distance: {calc_distance}")
-            print(f"    Solver distance: {unweighted_value}")
-            print(f"    Weight: {original_weight}")
-            print(f"    Weighted distance: {weighted_value}")
+                center_x1 = x1 + w1 // 2
+                center_y1 = y1 + h1 // 2
+                center_x2 = x2 + w2 // 2
+                center_y2 = y2 + h2 // 2
 
-            if calc_distance != unweighted_value:
-                print(f"    WARNING: Calculated distance does not match solver distance!")
-            if weighted_value != unweighted_value * original_weight:
-                print(f"    WARNING: Weighted distance does not match unweighted distance * weight!")
+                calc_dx = abs(center_x2 - center_x1)
+                calc_dy = abs(center_y2 - center_y1)
+                calc_distance = calc_dx + calc_dy
 
-        print("\nDetailed Debug Information:")
-        for vars in debug_vars:
-            print(f"Connection: {vars['name']}")
-            print(f"  center_x1: {solver.Value(vars['center_x1'])}")
-            print(f"  center_y1: {solver.Value(vars['center_y1'])}")
-            print(f"  center_x2: {solver.Value(vars['center_x2'])}")
-            print(f"  center_y2: {solver.Value(vars['center_y2'])}")
-            print(f"  dx: {solver.Value(vars['dx'])}")
-            print(f"  dy: {solver.Value(vars['dy'])}")
-            print(f"  abs_dx: {solver.Value(vars['abs_dx'])}")
-            print(f"  abs_dy: {solver.Value(vars['abs_dy'])}")
-            print(f"  distance: {solver.Value(vars['distance'])}")
-            print(f"  weighted_distance: {solver.Value(vars['weighted_distance'])}")
-            print()
+                unweighted_value = solver.Value(unweighted_dist)
+                weighted_value = solver.Value(weighted_dist)
 
-        return {name: (solver.Value(pos[0]), solver.Value(pos[1]), solver.BooleanValue(rotations[name]))
-                for name, pos in positions.items()}, total_unweighted_distance
+                print(f"  {name}:")
+                print(f"    Block 1 ({name1}): position ({x1}, {y1}), size ({w1}, {h1}), center ({center_x1}, {center_y1})")
+                print(f"    Block 2 ({name2}): position ({x2}, {y2}), size ({w2}, {h2}), center ({center_x2}, {center_y2})")
+                print(f"    Calculated |dx|: {calc_dx}, |dy|: {calc_dy}")
+                print(f"    Calculated distance: {calc_distance}")
+                print(f"    Solver distance: {unweighted_value}")
+                print(f"    Weight: {original_weight}")
+                print(f"    Weighted distance: {weighted_value}")
+
+                if calc_distance != unweighted_value:
+                    print(f"    WARNING: Calculated distance does not match solver distance!")
+                if weighted_value != unweighted_value * original_weight:
+                    print(f"    WARNING: Weighted distance does not match unweighted distance * weight!")
+
+            print("\nDetailed Debug Information:")
+            for vars in debug_vars:
+                print(f"Connection: {vars['name']}")
+                print(f"  center_x1: {solver.Value(vars['center_x1'])}")
+                print(f"  center_y1: {solver.Value(vars['center_y1'])}")
+                print(f"  center_x2: {solver.Value(vars['center_x2'])}")
+                print(f"  center_y2: {solver.Value(vars['center_y2'])}")
+                print(f"  dx: {solver.Value(vars['dx'])}")
+                print(f"  dy: {solver.Value(vars['dy'])}")
+                print(f"  abs_dx: {solver.Value(vars['abs_dx'])}")
+                print(f"  abs_dy: {solver.Value(vars['abs_dy'])}")
+                print(f"  distance: {solver.Value(vars['distance'])}")
+                print(f"  weighted_distance: {solver.Value(vars['weighted_distance'])}")
+                print()
+            """
+
+        return best_positions, best_seen
     else:
         print("No solution found within the time limit.")
         return None, None
 
-def get_connection_point(x, y, width, height, position):
+
+def get_rotated_position(pos, is_rotated):
+    """
+    Rotate the connection position if the block is rotated.
+    """
+    if not is_rotated:
+        return pos
+
+    rotation_map = {
+        "TL": "TR", "TM": "RM", "TR": "BR",
+        "ML": "TM", "MM": "MM", "MR": "BM",
+        "BL": "TL", "BM": "LM", "BR": "BL",
+        "LT": "RT", "LM": "TM", "LB": "LT",
+        "RT": "RB", "RM": "BM", "RB": "LB"
+    }
+    return rotation_map.get(pos, pos)
+
+def get_connection_point(x, y, width, height, position, is_rotated):
+    position = get_rotated_position(position, is_rotated)
     if position == "LM" or position == "ML":
         return x, y + height / 2
     elif position == "TR" or position == "RT":
@@ -395,8 +497,8 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
             w2, h2 = h2, w2
 
         # Get start and end points based on specified positions
-        start_x, start_y = get_connection_point(x1, y1, w1, h1, pos1)
-        end_x, end_y = get_connection_point(x2, y2, w2, h2, pos2)
+        start_x, start_y = get_connection_point(x1, y1, w1, h1, pos1, is_rotated1)
+        end_x, end_y = get_connection_point(x2, y2, w2, h2, pos2, is_rotated2)
 
         # Calculate vector and shorten the end point
         dx, dy = end_x - start_x, end_y - start_y
@@ -447,17 +549,19 @@ def main():
     # Set the solver time based on the --fast flag
     max_time = 15.0 if args.fast else args.time
 
-    print("Attempting to solve without rotation...")
-    optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time, allow_rotation=False)
+    print("Attempting to solve with rotation...")
+    best_positions = None
+    best_total_distance = None
+    for i in range(5):
+        optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time / 5, allow_rotation=True)
+        if best_total_distance is None or total_distance < best_total_distance:
+            best_total_distance = total_distance
+            best_positions = optimal_positions
 
-    if optimal_positions is None:
-        print("No solution found without rotation. Attempting to solve with rotation...")
-        optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time // 2, allow_rotation=True)
-
-    if optimal_positions:
-        for name, (x, y, is_rotated) in optimal_positions.items():
+    if best_positions:
+        for name, (x, y, is_rotated) in best_positions.items():
             print(f"{name}: position ({x}, {y}), {'rotated' if is_rotated else 'not rotated'}")
-        visualize_layout(blocks, connections, optimal_positions, grid_size, total_distance)
+        visualize_layout(blocks, connections, best_positions, grid_size, best_total_distance)
     else:
         print("No solution found in either attempt.")
 

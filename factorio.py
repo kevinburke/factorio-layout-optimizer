@@ -14,7 +14,7 @@ class Connection:
         self.target = target
         self.source_pos = source_pos
         self.target_pos = target_pos
-        self.weight = weight
+        self.weight = int(weight * 10)
 
 def electric_smelter(num_furnaces):
     # https://www.factorio.school/view/-LM4FAS99hG83TEAl_9T
@@ -127,6 +127,20 @@ def rocket_fuel(num_assemblers):
     # each one takes up 7 - pipe, 3 assembler, 2 belts, inserter
     return (7, math.ceil(num_assemblers) * 3 + 5)
 
+def power_plant(power_mw):
+    chunks = math.ceil(power_mw/1.8)
+    # 15 wide: one belt, inserter, 2 for boiler, 10 for two steam engines, one
+    #    for power poles
+    # two chunks take up 7 height
+    if chunks <= 20:
+        return Block(15, math.ceil(chunks*7/2)+3)
+    if chunks <= 40:
+        # four chunks take up 7 height
+        return Block(30, math.ceil(chunks*7/4)+3)
+    if chunks <= 60:
+        # six chunks take up 7 height
+        return Block(45, math.ceil(chunks*7/6)+6)
+    return Block(60, math.ceil(chunks*7/8)+6)
 
 # 2 rocket parts a minute, full rocket silo in 10 minutes
 # https://kirkmcdonald.github.io/calc.html#tab=graph&data=1-1-19&items=rocket-part:r:2,rocket-silo:r:1/10
@@ -183,16 +197,34 @@ rocket_blocks = {
 # Solid fuel: 360 per minute for 40 boilers
 
 # https://kirkmcdonald.github.io/calc.html#zip=dY1NDsIgEIVvwwoiRRMjCYcZp9hOCgyBYeHtbRcuNJq3+96fwD0sDeqqZhAIk9l1U5lKcCrXxnNwVpHE3AMM4QxCXExHigWjqYCbb/5sdeKFuhD+sHCNmRDSp/Xwk9PHwcA/k0MokTy/a1fdGLcoplPiI3m62Deq0GRH7gU=
+#
+map_exchange_string = """
+>>>eNpjZGBkyGUAgwZ7EOZgSc5PzFm9apU9DHMl5xcUpBbp5helIgtz
+JheVpqTq5meiKk7NS82t1E1KLE6FmAgxmSOzKD8P3QTW4pL8vFSYxSD
+MWlKUmlqMLMJdWpSYl1maC9KLLM7AqG1vPq2hRY4BhP/XMyj8/w/CQN
+YDoI0gzMDYAFLJyAgUgwHW5JzMtDQGBgVHIHYCSzMwVousc39YNQXIB
+AM9ByjjA1TkQBJMxBPG8HPAKaUCY5ggmWMMBp+RGBBLS0D2Q1RxOCAY
+EMkWkCQjY+/brQu+H7tgx/hn5cdLvkkJ9oyGriLvPhitswNKsoP8yQQ
+nZs0EgZ0wrzDAzHxgD5W6ac949gwIvLFnZAXpEAERDhZA4oA3MwOjAB
++QtaAHSCjIMMCcZgczRsSBMQ0MvsF88hjGuGyP7g9gQNiADJcDESdAB
+NhCuMsYIUyHfgdGB3mYrCRCCVC/EQOyG1IQPjwJs/Ywkv1oDsGMCGR/
+oImoOGCJBi6QhSlw4gUz3DXA8LzADuM5zHdgZAYxQKq+AMUgPJAMzCg
+ILeAADm5mBgT4YM9gxVs+FQDpxrFm<<<"""
 grid_size = (500, 250)
 max_x, max_y = grid_size
 blocks = {
     # top left is (0, 0)
-    "Copper Mine": Block(1, 1, fixed_x=1, fixed_y=(max_y-3)),
-    "Ore Mine": Block(1, 1, fixed_x=1, fixed_y=max_y-2),
-    "Coal Mine": Block(1, 1,fixed_x=3, fixed_y=max_y-1),
-    "Water": Block(1, 1, fixed_x=max_x//2, fixed_y=max_y-1),
-    "Oil": Block(1, 1, fixed_x=max_x-1, fixed_y=max_y//4),
-    "Stone Mine": Block(1, 1, fixed_x=1, fixed_y=max_y-5),
+    "Copper Mine": Block(1, 1, fixed_x=100, fixed_y=(max_y-1)),
+    "Ore Mine": Block(1, 1, fixed_x=1, fixed_y=max_y-1),
+    "Coal Mine": Block(1, 1,fixed_x=1, fixed_y=max_y-20),
+    "Water": Block(1, 1, fixed_x=1, fixed_y=max_y-50),
+    "Oil": Block(1, 1, fixed_x=9*32, fixed_y=max_y-20),
+    "Stone Mine": Block(1, 1, fixed_x=20, fixed_y=max_y-1),
+
+    "Cliffs": Block(15, 40, fixed_x=60, fixed_y=max_y-41),
+    "Cliffs 2": Block(26, 20, fixed_x=32*2+10, fixed_y=max_y-120),
+
+    "Power Plant": power_plant(power_mw=130),
 
     "Copper Smelting": electric_smelter(152.7),
     "Iron Smelting": electric_smelter(152.9),
@@ -283,14 +315,17 @@ blocks = {
 print("blocks: {}".format(blocks))
 
 # rotatable_blocks = {name for name, (w, h) in blocks.items() if w != h and w > 5 and h > 5}
-rotatable_blocks = {}
+rotatable_blocks = {'Copper Smelting', 'Green Circuit Assembly', 'Iron Smelting', 'Red Circuit Assembly', 'Advanced Oil Processing', 'Rocket Fuel', 'Rocket Control Unit', 'Blue Circuit'}
+
+required_power_mw = 140
+boilers = math.ceil(140/1.8)
 
 connections = [
-    ("Coal Mine", "Copper Smelting", "MM", "BM"),
-    Connection("Copper Mine", "Copper Smelting", "MM", "BM", 4),
+    Connection("Coal Mine", "Copper Smelting", "MM", "BM", 1.5),
+    Connection("Copper Mine", "Copper Smelting", "MM", "BM", 6),
 
-    ("Coal Mine", "Iron Smelting", "MM", "LM"),
-    Connection("Ore Mine", "Iron Smelting", "MM", "LM", 4),
+    Connection("Coal Mine", "Iron Smelting", "MM", "LM", 1.5),
+    Connection("Ore Mine", "Iron Smelting", "MM", "LM", 6),
 
     ("Iron Smelting", "Steel Smelting", "RM", "LM"),
     ("Coal Mine", "Steel Smelting", "MM", "LM"),
@@ -301,6 +336,9 @@ connections = [
     Connection("Iron Smelting", "Green Circuit Assembly", "RM", "BM", 3),
     # TODO - two entrances here, left and right
     Connection("Copper Smelting", "Green Circuit Assembly", "RM", "BL", 4),
+
+    Connection("Coal Mine", "Power Plant", "RM", "MM", math.ceil(boilers/20)),
+    Connection("Water", "Power Plant", "RM", "MM", math.ceil(boilers/20)),
 
     ("Iron Smelting", "Inserter Mall", "RM", "BL"),
     ("Green Circuit Assembly", "Inserter Mall", "BM", "BR"),
@@ -341,7 +379,7 @@ connections = [
     ("Iron Smelting", "Sulfuric Acid", "RM", "MM"),
     ("Sulfur", "Sulfuric Acid", "MM", "MM"),
 
-    ("Sulfuric Acid", "Blue Circuit Assembly", "MM", "LT"),
+    ("Sulfuric Acid", "Blue Circuit Assembly", "MM", "TL"),
     ("Green Circuit Assembly", "Blue Circuit Assembly", "BM", "BM"),
     ("Red Circuit Assembly", "Blue Circuit Assembly", "LM", "BM"),
 
@@ -352,19 +390,19 @@ connections = [
     ("Green Circuit Assembly", "Speed Module", "BM", "MM"),
     ("Red Circuit Assembly", "Speed Module", "LM", "MM"),
 
-    ("Iron Smelting", "Red Science", "RM", "TR"),
-    ("Copper Smelting", "Red Science", "RM", "TR"),
+    Connection("Iron Smelting", "Red Science", "RM", "TR", 2),
+    Connection("Copper Smelting", "Red Science", "RM", "TR", 2),
 
     ("Iron Smelting", "Green Science", "RM", "TR"),
-    ("Green Circuit Assembly", "Green Science", "RM", "TR"),
+    ("Green Circuit Assembly", "Green Science", "BM", "TR"),
 
     ("Iron Smelting", "Blue Science", "RM", "TL"),
     ("Steel Smelting", "Blue Science", "RM", "TM"),
     ("Red Circuit Assembly", "Blue Science", "LM", "TR"),
     ("Sulfur", "Blue Science", "MM", "TR"),
 
-    ("Lubricant", "Yellow Science", "MM", "TL"),
-    ("Green Circuit Assembly", "Yellow Science", "MM", "MM"),
+    ("Lubricant", "Yellow Science", "MM", "BL"),
+    ("Green Circuit Assembly", "Yellow Science", "BM", "TL"),
     ("Steel Smelting", "Yellow Science", "RM", "TM"),
     ("Iron Smelting", "Yellow Science", "RM", "TL"),
     ("Plastic", "Yellow Science", "MM", "MM"),
@@ -379,8 +417,9 @@ connections = [
     ("Red Circuit Assembly", "Purple Science", "LM", "TM"),
     ("Green Circuit Assembly", "Purple Science", "BM", "TM"),
 
-    ("Red Science", "Lab", "TL", "BL"),
-    ("Green Science", "Lab", "TL", "BL"),
+    Connection("Red Science", "Lab", "TL", "BL", 2),
+    Connection("Green Science", "Lab", "TL", "BL", 1.5),
+
     ("Blue Science", "Lab", "TR", "BL"),
     ("Yellow Science", "Lab", "TM", "BL"),
     ("Purple Science", "Lab", "TR", "BL"),
@@ -394,6 +433,8 @@ connections = [
     ("Heavy Oil Cracking", "Rocket Fuel", "MM", "MM"),
     ("Solid Fuel", "Rocket Fuel", "MM", "MM"),
 
+    Connection("Solid Fuel", "Power Plant", "MM", "MM", 0.5),
+
     ("Speed Module", "Rocket Control Unit", "MM", "MM"),
     ("Blue Circuit Assembly", "Rocket Control Unit", "MM", "MM"),
 
@@ -402,7 +443,7 @@ connections = [
     ("Stone Smelting", "Concrete", "RM", "MM"),
 
     ("Lubricant", "Electric Engine Unit", "MM", "TL"),
-    ("Green Circuit Assembly", "Electric Engine Unit", "MM", "MM"),
+    ("Green Circuit Assembly", "Electric Engine Unit", "BM", "MM"),
     # hack - this reuses the engine assemblers from blue science
     ("Blue Science", "Electric Engine Unit", "MM", "MM"),
 

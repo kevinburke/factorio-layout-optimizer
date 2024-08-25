@@ -1,0 +1,40 @@
+Copper Mine: position (100, 249), not rotated
+Ore Mine: position (1, 249), not rotated
+Coal Mine: position (1, 230), not rotated
+Water: position (1, 200), not rotated
+Oil: position (288, 230), not rotated
+Stone Mine: position (20, 249), not rotated
+Cliffs: position (60, 209), not rotated
+Cliffs 2: position (74, 130), not rotated
+Power Plant: position (0, 87), not rotated
+Copper Smelting: position (82, 195), not rotated
+Iron Smelting: position (2, 157), not rotated
+Steel Smelting: position (67, 101), not rotated
+Stone Smelting: position (8, 209), not rotated
+Advanced Oil Processing: position (6, 65), rotated
+Heavy Oil Cracking: position (91, 83), not rotated
+Light Oil Cracking: position (91, 73), not rotated
+Plastic: position (101, 137), not rotated
+Green Circuit Assembly: position (162, 221), rotated
+Red Circuit Assembly: position (162, 162), not rotated
+Blue Circuit Assembly: position (154, 123), not rotated
+Inserter Mall: position (90, 152), not rotated
+Assembler Mall: position (162, 176), not rotated
+Medium Power Pole Mall: position (109, 172), not rotated
+Belt Mall: position (162, 199), not rotated
+Red Science: position (143, 183), not rotated
+Green Science: position (162, 183), not rotated
+Blue Science: position (116, 173), not rotated
+Purple Science: position (83, 180), not rotated
+Yellow Science: position (113, 127), not rotated
+Sulfuric Acid: position (86, 170), not rotated
+Lubricant: position (109, 156), not rotated
+Battery: position (100, 149), not rotated
+Electric Engine Unit: position (123, 166), not rotated
+Sulfur: position (82, 170), not rotated
+Concrete: position (0, 209), not rotated
+Solid Fuel: position (60, 109), not rotated
+Rocket Fuel: position (68, 93), rotated
+Rocket Control Unit: position (147, 77), rotated
+Rocket: position (116, 92), not rotated
+Lab: position (143, 159), not rotated
