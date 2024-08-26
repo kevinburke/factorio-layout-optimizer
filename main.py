@@ -549,8 +549,12 @@ def main():
     parser.add_argument("--runs", type=int, default=5, help="Number of runs")
     args = parser.parse_args()
 
-    # Set the solver time based on the --fast flag
-    max_time = 15.0 if args.fast else args.time
+    if args.fast:
+        max_time = 15
+        runs = 1
+    else:
+        max_time = args.time
+        runs = args.runs
 
     print("Attempting to solve with rotation...")
     best_positions = None
