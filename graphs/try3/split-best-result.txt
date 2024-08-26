@@ -1,0 +1,63 @@
+CpSolverResponse summary:
+status: FEASIBLE
+objective: 35406
+best_bound: 23680
+integers: 596
+booleans: 10264
+conflicts: 204464
+branches: 3446274
+propagations: 167952716
+integer_propagations: 130060802
+restarts: 668255
+lp_iterations: 4055162
+walltime: 500.098
+usertime: 500.098
+deterministic_time: 1719.98
+gap_integral: 16132
+solution_fingerprint: 0x20cbd38db87fa87f
+
+Solver status: FEASIBLE
+Copper Mine: position (224, 40), not rotated
+Ore Mine: position (1, 69), not rotated
+Coal Mine: position (1, 176), not rotated
+Stone Mine: position (36, 59), not rotated
+Water: position (98, 203), not rotated
+Oil: position (234, 91), not rotated
+Cliffs: position (212, 96), not rotated
+Cliffs 2: position (236, 74), not rotated
+Power Plant: position (31, 167), not rotated
+Copper Smelting: position (260, 14), rotated
+Iron Smelting - Steel: position (21, 75), not rotated
+Iron Smelting - GC: position (18, 101), not rotated
+Iron Smelting - Other: position (102, 105), not rotated
+Steel Smelting: position (136, 169), not rotated
+Stone Smelting: position (98, 158), not rotated
+Advanced Oil Processing: position (50, 136), rotated
+Heavy Oil Cracking: position (126, 177), not rotated
+Light Oil Cracking: position (126, 167), not rotated
+Plastic: position (136, 147), not rotated
+Green Circuit Assembly 1: position (286, 94), rotated
+Green Circuit Assembly 2: position (182, 94), rotated
+Green Circuit Assembly 3: position (187, 64), not rotated
+Red Circuit Assembly: position (251, 146), not rotated
+Blue Circuit Assembly: position (260, 110), not rotated
+Inserter Mall: position (180, 66), not rotated
+Assembler Mall: position (200, 157), not rotated
+Medium Power Pole Mall: position (232, 110), not rotated
+Belt Mall: position (182, 120), not rotated
+Red Science: position (241, 118), not rotated
+Green Science: position (241, 130), not rotated
+Blue Science: position (173, 145), not rotated
+Purple Science: position (218, 157), not rotated
+Yellow Science: position (200, 121), not rotated
+Sulfuric Acid: position (161, 144), not rotated
+Lubricant: position (178, 135), not rotated
+Battery: position (165, 144), not rotated
+Electric Engine Unit: position (182, 138), not rotated
+Sulfur: position (157, 144), not rotated
+Concrete: position (108, 196), not rotated
+Solid Fuel: position (91, 158), not rotated
+Rocket Fuel: position (112, 160), rotated
+Rocket Control Unit: position (135, 131), not rotated
+Rocket: position (148, 151), not rotated
+Lab: position (241, 94), not rotated

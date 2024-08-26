@@ -22,10 +22,10 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def on_solution_callback(self):
         self.__solution_count += 1
-        print(f"Solution {self.__solution_count}")
-        for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
-        print("\n")
+        # print(f"Solution {self.__solution_count}")
+        # for v in self.__variables:
+            # print(f'{v}={self.Value(v)}', end=' ')
+        # print("\n")
 
     def solution_count(self):
         return self.__solution_count
@@ -98,7 +98,9 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
         # return x, y
 
         conn_x = model.NewIntVar(0, grid_size[0], f'conn_x_{name}_{pos}')
+        # model.add_hint(conn_x, solver.Value(x))
         conn_y = model.NewIntVar(0, grid_size[1], f'conn_y_{name}_{pos}')
+        # model.add_hint(conn_y, solver.Value(y))
 
         # Helper function to create midpoint without division
         def create_midpoint(start, length):
@@ -461,13 +463,13 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
                             wrap=True)
 
         # Truncate text if it's still too tall
-        while len(wrapped_text) > 1:
-            estimated_height = estimate_text_height('\n'.join(wrapped_text), font_prop, width * 0.9)
-            if estimated_height <= height * 0.9:
-                break
-            wrapped_text = wrapped_text[:-1]
-            wrapped_text[-1] += '...'
-            best_text.set_text('\n'.join(wrapped_text))
+        # while len(wrapped_text) > 1:
+            # estimated_height = estimate_text_height('\n'.join(wrapped_text), font_prop, width * 0.9)
+            # if estimated_height <= height * 0.9:
+                # break
+            # wrapped_text = wrapped_text[:-1]
+            # wrapped_text[-1] += '...'
+            # best_text.set_text('\n'.join(wrapped_text))
 
     # Draw connections
     for conn in connections:
@@ -503,7 +505,7 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
         # Calculate vector and shorten the end point
         dx, dy = end_x - start_x, end_y - start_y
         length = math.sqrt(dx**2 + dy**2)
-        shorten_factor = 10  # Pixels to shorten by
+        shorten_factor = 5  # Pixels to shorten by
         if length > shorten_factor:
             end_x -= (dx / length) * shorten_factor
             end_y -= (dy / length) * shorten_factor
@@ -544,6 +546,7 @@ def main():
     parser = argparse.ArgumentParser(description="Optimize Factorio factory layout")
     parser.add_argument("--fast", action="store_true", help="Use fast mode (15 seconds solver time)")
     parser.add_argument("--time", type=int, default=240.0, help="Amount of time to run the solver for")
+    parser.add_argument("--runs", type=int, default=5, help="Number of runs")
     args = parser.parse_args()
 
     # Set the solver time based on the --fast flag
@@ -552,8 +555,8 @@ def main():
     print("Attempting to solve with rotation...")
     best_positions = None
     best_total_distance = None
-    for i in range(5):
-        optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time / 5, allow_rotation=True)
+    for i in range(args.runs):
+        optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time / args.runs, allow_rotation=True)
         if best_total_distance is None or total_distance < best_total_distance:
             best_total_distance = total_distance
             best_positions = optimal_positions
