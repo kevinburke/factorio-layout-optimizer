@@ -170,9 +170,9 @@ rocket_blocks = {
 
     # these are included in the Advanced Oil processing footprint
     # need 1.5 light oil crackers
-    "Light Oil Cracking": (1, 1),
+    # "Light Oil Cracking": (1, 1),
     # 1.2 crackers
-    "Heavy Oil Cracking": (1, 1),
+    # "Heavy Oil Cracking": (1, 1),
 
     "Sulfur": plastic(1),
     "Sulfuric Acid": (15, 10),
@@ -198,7 +198,7 @@ rocket_blocks = {
 # one steam engine can produce 900kW, two steam engines = 1.8MW
 # Solid fuel: 360 per minute for 40 boilers
 
-# https://kirkmcdonald.github.io/calc.html#zip=dY2xDsIwDET/JhMRpbBQKR9jOQasOnGUOAN/32ZhCrrl9J50F8Eg3PyZp0ucw+penSQ0FY5+VJdK1RjWxbFRagG6aQJjzb4hU0byBXDf6nZfLqJvbsY4UfihxAgyUeOg45/Jbixs34mpijuZbyw6wPXxQwWqnWg9AA==
+# https://kirkmcdonald.github.io/calc.html#zip=bY2xDsMgDET/himoNE2HRuJjLENbKwYjMEP+vmHohm453ZPeBVDwd3vlZRJlv5p3j+ybMAU7qkmlSvCrM6QxNQ9dJYGSZNuQYsZoC+Cx1/3hFpYPNSWcIPzGRAg8QeOg40y5PZeuxKTnhFTBI6ptxDI8t839pwJVr2n9AQ==
 #
 map_exchange_string = """
 >>>eNpjZGBkyGUAgwZ7EOZgSc5PzFm9apU9CINEuJLzCwpSi3Tzi
@@ -271,9 +271,9 @@ blocks = {
 
     "Advanced Oil Processing": advanced_oil(12.5),
     # 1.2 crackers
-    "Heavy Oil Cracking": (10, 10),
+    # "Heavy Oil Cracking": (10, 10),
     # need 4.9 light oil crackers - these are covered in advanced oil
-    "Light Oil Cracking": (10, 10),
+    # "Light Oil Cracking": (10, 10),
 
     "Plastic": plastic(9.8),
 
@@ -497,7 +497,7 @@ connections = [
     ("Steel Smelting - Other", "Yellow Science", "RM", "TM"),
     ("Iron Smelting - Other", "Yellow Science", "RM", "TL"),
     ("Plastic", "Yellow Science", "MM", "MM"),
-    ("Copper Smelting - Other", "Yellow Science", "RM", "TR"),
+    ("Copper Smelting - LDS", "Yellow Science", "RM", "TR"),
     ("Battery", "Yellow Science", "MM", "TL"),
     ("Blue Circuit Assembly", "Yellow Science", "MM", "TM"),
 
