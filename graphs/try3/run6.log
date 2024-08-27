@@ -15574,3 +15574,33 @@ Red Science: position (162, 136), not rotated
 Green Science: position (177, 136), not rotated
 Blue Science: position (135, 129), not rotated
 Purple Science: position (85, 106), not rotated
+Yellow Science: position (126, 160), rotated
+Sulfuric Acid: position (150, 153), not rotated
+Lubricant: position (133, 153), not rotated
+Battery: position (154, 153), not rotated
+Electric Engine Unit: position (135, 122), not rotated
+Sulfur: position (158, 201), not rotated
+Concrete: position (74, 107), not rotated
+Solid Fuel: position (75, 153), not rotated
+Rocket Fuel: position (198, 177), not rotated
+Rocket Control Unit: position (205, 158), rotated
+Rocket: position (205, 196), not rotated
+Lab: position (162, 112), not rotated
+Traceback (most recent call last):
+  File "/Users/kevin/src/github.com/kevinburke/factorio-layout-optimizer/main.py", line 576, in <module>
+    main()
+  File "/Users/kevin/src/github.com/kevinburke/factorio-layout-optimizer/main.py", line 571, in main
+    visualize_layout(blocks, connections, best_positions, grid_size, best_total_distance)
+  File "/Users/kevin/src/github.com/kevinburke/factorio-layout-optimizer/main.py", line 526, in visualize_layout
+    plt.show()
+  File "/Users/kevin/src/github.com/kevinburke/factorio-layout-optimizer/venv/lib/python3.10/site-packages/matplotlib/pyplot.py", line 612, in show
+    return _get_backend_mod().show(*args, **kwargs)
+  File "/Users/kevin/src/github.com/kevinburke/factorio-layout-optimizer/venv/lib/python3.10/site-packages/matplotlib/backend_bases.py", line 3553, in show
+    cls.mainloop()
+  File "/Users/kevin/src/github.com/kevinburke/factorio-layout-optimizer/venv/lib/python3.10/site-packages/matplotlib/backends/backend_macosx.py", line 178, in start_main_loop
+    with _allow_interrupt_macos():
+  File "/Users/kevin/.pyenv/versions/3.10.14/lib/python3.10/contextlib.py", line 142, in __exit__
+    next(self.gen)
+  File "/Users/kevin/src/github.com/kevinburke/factorio-layout-optimizer/venv/lib/python3.10/site-packages/matplotlib/backend_bases.py", line 1672, in _allow_interrupt
+    old_sigint_handler(*handler_args)
+KeyboardInterrupt
