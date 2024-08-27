@@ -146,7 +146,7 @@ def power_plant(power_mw):
 # https://kirkmcdonald.github.io/calc.html#zip=dY2xDsIwDET/JhMRpbBQKR9jOQasOnGUOAN/32ZhCrrl9J50F8Eg3PyZp0ucw+penSQ0FY5+VJdK1RjWxbFRagG6aQJjzb4hU0byBXDf6nZfLqJvbsY4UfihxAgyUeOg45/Jbixs34mpijuZbyw6wPXxQwWqnWg9AA==
 rocket_blocks = {
     "Copper Mine": (1, 1),
-    "Ore Mine": (1, 1),
+    "Iron Mine": (1, 1),
     "Coal Mine": (1, 1),
     "Water": (1, 1),
     "Oil": (1, 1),
@@ -241,15 +241,24 @@ total_copper_smelting = 157.4
 
 blocks = {
     # top left is (0, 0)
-    "Copper Mine": Block(28, 28, fixed_x=7*32, fixed_y=40),
-    "Ore Mine": Block(20, 32, fixed_x=1, fixed_y=2*32+5),
+    "Copper Mine": Block(28, 28, fixed_x=7*32+2, fixed_y=38),
+    # the ore mine a little narrower than reality so it doesn't conflict with
+    # the stone mine
+    "Iron Mine": Block(24, 32, fixed_x=1, fixed_y=2*32+10),
     "Coal Mine": Block(1, 1, fixed_x=1, fixed_y=max_y-3*32+16),
-    "Stone Mine": Block(16, 16, fixed_x=36, fixed_y=2*32-5),
+    # the stone mine is a bit narrower so it doesn't conflict with Cliffs 6.
+    "Stone Mine": Block(10, 20, fixed_x=32, fixed_y=2*32-2),
     "Water": Block(60, 52, fixed_x=3*32+2, fixed_y=max_y-53),
     "Oil": Block(1, 1, fixed_x=7*32+10, fixed_y=3*32-5),
 
+    # stone mine and cliffs 6, also cliffs 3 and 5.
+
     "Cliffs": Block(20, 25, fixed_x=6*32+20, fixed_y=3*32),
     "Cliffs 2": Block(24, 20, fixed_x=7*32+12, fixed_y=2*32+10),
+    "Cliffs 3": Block(36, 15, fixed_x=5*32-5, fixed_y=2*32-10),
+    "Cliffs 4": Block(18, 36, fixed_x=6*32, fixed_y=16),
+    "Cliffs 5": Block(34, 32-10, fixed_x=4*32-6, fixed_y=32-3),
+    "Cliffs 6": Block(24, 26, fixed_x=1*32+14, fixed_y=2*32+1),
 
     "Power Plant": power_plant(power_mw=required_power_mw),
 
@@ -404,9 +413,9 @@ connections = [
     Connection("Coal Mine", "Iron Smelting - GC", "MM", "LM", 1),
     Connection("Coal Mine", "Iron Smelting - Other", "MM", "LM", 1),
 
-    Connection("Ore Mine", "Iron Smelting - Steel", "MM", "LM", 3),
-    Connection("Ore Mine", "Iron Smelting - GC", "MM", "LM", 2),
-    Connection("Ore Mine", "Iron Smelting - Other", "MM", "LM", 1),
+    Connection("Iron Mine", "Iron Smelting - Steel", "MM", "LM", 3),
+    Connection("Iron Mine", "Iron Smelting - GC", "MM", "LM", 2),
+    Connection("Iron Mine", "Iron Smelting - Other", "MM", "LM", 1),
 
     Connection("Iron Smelting - Steel", "Steel Smelting - Purple", "RM", "LM", 2),
     ("Coal Mine", "Steel Smelting - Purple", "MM", "LM"),

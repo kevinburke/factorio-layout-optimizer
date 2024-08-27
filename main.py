@@ -98,9 +98,19 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
         # return x, y
 
         conn_x = model.NewIntVar(0, grid_size[0], f'conn_x_{name}_{pos}')
-        # model.add_hint(conn_x, solver.Value(x))
+        if 'Copper Smelting' in name and blocks['Copper Mine'].fixed_x is not None:
+            model.add_hint(conn_x, blocks['Copper Mine'].fixed_x)
+        if 'Iron Smelting' in name and blocks['Iron Mine'].fixed_x is not None:
+            model.add_hint(conn_x, blocks['Iron Mine'].fixed_x)
+        if 'Power Plant' in name and blocks['Water'].fixed_x is not None:
+            model.add_hint(conn_x, blocks['Water'].fixed_x)
         conn_y = model.NewIntVar(0, grid_size[1], f'conn_y_{name}_{pos}')
-        # model.add_hint(conn_y, solver.Value(y))
+        if 'Copper Smelting' in name and blocks['Copper Mine'].fixed_y is not None:
+            model.add_hint(conn_y, blocks['Copper Mine'].fixed_y)
+        if 'Iron Smelting' in name and blocks['Iron Mine'].fixed_y is not None:
+            model.add_hint(conn_y, blocks['Iron Mine'].fixed_y)
+        if 'Power Plant' in name and blocks['Water'].fixed_y is not None:
+            model.add_hint(conn_y, blocks['Water'].fixed_y)
 
         # Helper function to create midpoint without division
         def create_midpoint(start, length):
@@ -559,8 +569,8 @@ def main():
     print("Attempting to solve with rotation...")
     best_positions = None
     best_total_distance = None
-    for i in range(args.runs):
-        optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time / args.runs, allow_rotation=True)
+    for i in range(runs):
+        optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time / runs, allow_rotation=True)
         if best_total_distance is None or total_distance < best_total_distance:
             best_total_distance = total_distance
             best_positions = optimal_positions
