@@ -8,6 +8,9 @@ class Block:
         self.fixed_x = fixed_x
         self.fixed_y = fixed_y
 
+    def fixed_position(self):
+        return self.fixed_x is not None and self.fixed_y is not None
+
 class Connection:
     def __init__(self, source, target, source_pos, target_pos, weight=1):
         self.source = source
