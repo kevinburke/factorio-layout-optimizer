@@ -1,0 +1,25 @@
+run 17:
+
+comment out these parameters
+
+    # solver.parameters.optimize_with_lb_tree_search = True
+    # solver.parameters.use_strong_propagation_in_disjunctive = True
+    # solver.parameters.use_area_energetic_reasoning_in_no_overlap_2d = True
+    # solver.parameters.use_energetic_reasoning_in_no_overlap_2d = True
+    # solver.parameters.max_pairs_pairwise_reasoning_in_no_overlap_2d = True
+
+boost num_search_workers to 16 in an attempt to encourage neighborhood searches
+
+run 19:
+
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = max_time
+    solver.parameters.num_search_workers = 16
+    solver.parameters.log_search_progress = True
+    solver.parameters.log_subsolver_statistics = True
+    # solver.parameters.extra_subsolvers.append("lb_tree_search")
+    solver.parameters.ignore_subsolvers.append("reduced_costs")
+    solver.parameters.ignore_subsolvers.append("pseudo_costs")
+    solver.parameters.ignore_subsolvers.append("objective_shaving_search_max_lp")
+    solver.parameters.ignore_subsolvers.append("objective_shaving_search_no_lp")
+    solver.parameters.ignore_subsolvers.append("default_lp")

@@ -111,8 +111,6 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
         yvar = model.new_interval_var(y_starts[i], y_sizes[i], y_ends[i], f"y_interval_{name}")
         x_intervals.append(xvar)
         y_intervals.append(yvar)
-        print(repr(xvar))
-        print(repr(yvar))
         i += 1
 
         # all_vars.append(rotations[name])
@@ -182,8 +180,6 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
                 continue
 
             if isinstance(source_block, Block) and source_block.fixed_position():
-                print(f"add_hint({conn_x}, {source_block.fixed_x})")
-                print(f"add_hint({conn_y}, {source_block.fixed_y})")
                 model.add_hint(conn_x, source_block.fixed_x)
                 model.add_hint(conn_y, source_block.fixed_y)
                 break
@@ -354,17 +350,23 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
     # print(model.Proto())
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = max_time
-    solver.parameters.num_search_workers = 8
+    solver.parameters.num_search_workers = 16
     solver.parameters.log_search_progress = True
     solver.parameters.log_subsolver_statistics = True
+    # solver.parameters.extra_subsolvers.append("lb_tree_search")
     solver.parameters.ignore_subsolvers.append("reduced_costs")
-    # solver.parameters.ignore_subsolvers.append("default_lp")
-    # solver.parameters.ignore_subsolvers.append("packing_precedences_lns")
-    # solver.parameters.ignore_subsolvers.append("scheduling_precedences_lns")
-    # solver.parameters.ignore_subsolvers.append("graph_dec_lns")
+    solver.parameters.ignore_subsolvers.append("pseudo_costs")
+    solver.parameters.ignore_subsolvers.append("objective_shaving_search_max_lp")
+    solver.parameters.ignore_subsolvers.append("objective_shaving_search_no_lp")
+    solver.parameters.ignore_subsolvers.append("default_lp")
+    # solver.parameters.optimize_with_lb_tree_search = True
+    # solver.parameters.use_strong_propagation_in_disjunctive = True
+    # solver.parameters.use_area_energetic_reasoning_in_no_overlap_2d = True
+    # solver.parameters.use_energetic_reasoning_in_no_overlap_2d = True
+    # solver.parameters.max_pairs_pairwise_reasoning_in_no_overlap_2d = True
     solver.parameters.randomize_search = True
     solver.parameters.random_seed = random.randint(0, 10000)  # Add randomness
-    solver.parameters.optimize_with_core = True
+    # solver.parameters.optimize_with_core = True
     # solver.parameters.optimize_with_lb_tree_search = True
 
     solution_printer = VarArraySolutionPrinter(all_vars)
