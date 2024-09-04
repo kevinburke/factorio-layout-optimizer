@@ -1,4 +1,5 @@
 import argparse
+from itertools import product
 import math
 import random
 
@@ -10,7 +11,10 @@ from matplotlib.font_manager import FontProperties
 from matplotlib.textpath import TextPath
 from matplotlib.font_manager import FontProperties
 
-from factorio import Block, Connection, blocks, connections, grid_size, rotatable_blocks
+from factorio import Block, Connection, OneOf, blocks, connections, grid_size
+
+rcu_constraints = []
+combo_vars = []
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
@@ -30,7 +34,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def solution_count(self):
         return self.__solution_count
 
-def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time, allow_rotation=True):
+def optimize_factory_layout(blocks, connections, grid_size, max_time, allow_rotation=True):
     model = cp_model.CpModel()
 
     # Variables for block positions and rotations
@@ -141,90 +145,129 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
             # model.Add(sizes[name][1] == height)
 
 
-    model.add_no_overlap_2d(x_intervals, y_intervals)
+    # model.add_no_overlap_2d(x_intervals, y_intervals)
 
     # Ensure blocks don't overlap
-    # for name1, _ in blocks.items():
-        # for name2, _ in blocks.items():
-            # if name1 < name2:
-                # b1_left_of_b2 = model.NewBoolVar(f'{name1}_left_of_{name2}')
-                # b2_left_of_b1 = model.NewBoolVar(f'{name2}_left_of_{name1}')
-                # b1_above_b2 = model.NewBoolVar(f'{name1}_above_{name2}')
-                # b2_above_b1 = model.NewBoolVar(f'{name2}_above_{name1}')
+    for name1, _ in blocks.items():
+        for name2, _ in blocks.items():
+            if name1 < name2:
+                b1_left_of_b2 = model.new_bool_var(f'{name1}_left_of_{name2}')
+                b2_left_of_b1 = model.new_bool_var(f'{name2}_left_of_{name1}')
+                b1_above_b2 = model.new_bool_var(f'{name1}_above_{name2}')
+                b2_above_b1 = model.new_bool_var(f'{name2}_above_{name1}')
 
-                # model.Add(positions[name1][0] + sizes[name1][0] <= positions[name2][0]).OnlyEnforceIf(b1_left_of_b2)
-                # model.Add(positions[name2][0] + sizes[name2][0] <= positions[name1][0]).OnlyEnforceIf(b2_left_of_b1)
-                # model.Add(positions[name1][1] + sizes[name1][1] <= positions[name2][1]).OnlyEnforceIf(b1_above_b2)
-                # model.Add(positions[name2][1] + sizes[name2][1] <= positions[name1][1]).OnlyEnforceIf(b2_above_b1)
+                model.Add(positions[name1][0] + sizes[name1][0] <= positions[name2][0]).OnlyEnforceIf(b1_left_of_b2)
+                model.Add(positions[name2][0] + sizes[name2][0] <= positions[name1][0]).OnlyEnforceIf(b2_left_of_b1)
+                model.Add(positions[name1][1] + sizes[name1][1] <= positions[name2][1]).OnlyEnforceIf(b1_above_b2)
+                model.Add(positions[name2][1] + sizes[name2][1] <= positions[name1][1]).OnlyEnforceIf(b2_above_b1)
 
-                # model.AddBoolOr([b1_left_of_b2, b2_left_of_b1, b1_above_b2, b2_above_b1])
+                model.AddBoolOr([b1_left_of_b2, b2_left_of_b1, b1_above_b2, b2_above_b1])
 
-    def get_connection_point(model, name, pos, x, y, width, height, rotated, no_rotation):
+    def get_connection_point(model, name, typ, pos, x, y, width, height, no_rotation, rotated):
         # Assert that all inputs are IntVars
         assert all(isinstance(var, cp_model.IntVar) for var in [x, y, width, height]), \
             "All inputs (x, y, width, height) must be IntVars"
         # return x, y
 
-        conn_x = model.NewIntVar(0, grid_size[0], f'conn_x_{name}_{pos}')
-        conn_y = model.NewIntVar(0, grid_size[1], f'conn_y_{name}_{pos}')
-        for conn in connections:
-            source_block = None
-            try:
-                if isinstance(conn, Connection):
-                    if conn.target == name:
-                        source_block = blocks[conn.source]
-                else:
-                    if conn[1] == name:
-                        source_block = blocks[conn[0]]
-            except KeyError:
-                continue
-
-            if isinstance(source_block, Block) and source_block.fixed_position():
-                model.add_hint(conn_x, source_block.fixed_x)
-                model.add_hint(conn_y, source_block.fixed_y)
-                break
-
         # Helper function to create midpoint without division
-        def create_midpoint(start, length):
-            mid = model.NewIntVar(0, max(grid_size[0], grid_size[1]), f'mid_{name}_{pos}')
+        def create_midpoint(start, length, key):
+            mid = model.NewIntVar(0, max(grid_size[0], grid_size[1]), f'mid_{key}_{name}_{typ}_{pos}')
             model.Add(2 * mid >= 2 * start + length - 1).WithName(f"midpoint of {name} should be > {start + length - 1}")
             model.Add(2 * mid <= 2 * start + length).WithName(f"midpoint of {name} should be <= {start + length}")
             return mid
 
-        mid_x = create_midpoint(x, width)
-        mid_y = create_midpoint(y, height)
-        if pos == "MM":
-            model.Add(conn_x == mid_x)
-            model.Add(conn_y == mid_y)
-            return conn_x, conn_y
+        conns_x = []
+        conns_y = []
+        all_pos = []
+        pos_bools = []
+        if isinstance(pos, OneOf):
+            all_pos = pos.conns
         else:
-            # Define connection points for non-rotated and rotated states
-            positions = {
-                "TL": [(x, y), (x + width, y)],
-                "TM": [(mid_x, y), (x + width, mid_y)],
-                "TR": [(x + width, y), (x + width, y + height)],
+            all_pos = [pos]
 
-                "ML": [(x, mid_y), (mid_x, y)],
-                "LM": [(x, mid_y), (mid_x, y)],
+        i = 0
+        for pos in all_pos:
+            i += 1
+            conn_x = model.NewIntVar(0, grid_size[0], f'conn_x_{name}_{typ}_{pos}_{i}')
+            conn_y = model.NewIntVar(0, grid_size[1], f'conn_y_{name}_{typ}_{pos}_{i}')
+            pos_bool = model.new_bool_var(f"conn_{name}_{typ}_{pos}_inuse_{i}")
+            pos_bools.append(pos_bool)
+            conns_x.append(conn_x)
+            conns_y.append(conn_y)
+            for conn in connections:
+                source_block = None
+                try:
+                    if isinstance(conn, Connection):
+                        if conn.target == name:
+                            source_block = blocks[conn.source]
+                    else:
+                        if conn[1] == name:
+                            source_block = blocks[conn[0]]
+                except KeyError:
+                    continue
 
-                "MR": [(x + width, mid_y), (mid_x, y + height)],
-                "RM": [(x + width, mid_y), (mid_x, y + height)],
+                if isinstance(source_block, Block) and source_block.fixed_position():
+                    model.add_hint(conn_x, source_block.fixed_x)
+                    model.add_hint(conn_y, source_block.fixed_y)
+                    break
 
-                "BL": [(x, y + height), (x, y)],
-                "BM": [(mid_x, y + height), (x, mid_y)],
-                "BR": [(x + width, y + height), (x, y + height)]
-            }
-            if pos in positions:
-                px_non_rotated, py_non_rotated = positions[pos][0]
-                px_rotated, py_rotated = positions[pos][1]
-
-                model.Add(conn_x == px_non_rotated).OnlyEnforceIf(no_rotation)
-                model.Add(conn_y == py_non_rotated).OnlyEnforceIf(no_rotation)
-                model.Add(conn_x == px_rotated).OnlyEnforceIf(rotated)
-                model.Add(conn_y == py_rotated).OnlyEnforceIf(rotated)
+            mid_x = create_midpoint(x, width, 'x')
+            mid_y = create_midpoint(y, height, 'y')
+            if pos == "MM":
+                model.Add(conn_x == mid_x).OnlyEnforceIf(pos_bool)
+                model.Add(conn_y == mid_y).OnlyEnforceIf(pos_bool)
+                continue
             else:
-                raise ValueError(f"unknown position {pos}")
-        return conn_x, conn_y
+                # Define connection points for non-rotated and rotated states
+                # Rotated is 90 degrees clockwise (top moves to the right.)
+                positions = {
+                    "TL": [(x, y), (x + width, y)],
+                    "TM": [(mid_x, y), (x + width, mid_y)],
+                    "TR": [(x + width, y), (x + width, y + height)],
+
+                    "ML": [(x, mid_y), (mid_x, y)],
+                    "LM": [(x, mid_y), (mid_x, y)],
+
+                    "MR": [(x + width, mid_y), (mid_x, y + height)],
+                    "RM": [(x + width, mid_y), (mid_x, y + height)],
+
+                    "BL": [(x, y + height), (x, y)],
+                    "BM": [(mid_x, y + height), (x, mid_y)],
+                    "BR": [(x + width, y + height), (x, y + height)]
+                }
+                if pos in positions:
+                    px_non_rotated, py_non_rotated = positions[pos][0]
+                    px_rotated, py_rotated = positions[pos][1]
+                    # if name1 == "Plastic" and name2 == "Red Circuit - RCU":
+                        # print("appending constraints")
+                        # rcu_constraints.append(conn_x)
+                        # rcu_constraints.append(conn_y)
+                        # rcu_constraints.append(x)
+                        # rcu_constraints.append(mid_y)
+                        # rcu_constraints.append(mid_x)
+                        # rcu_constraints.append(y)
+                        # rcu_constraints.append(px_non_rotated)
+                        # rcu_constraints.append(py_non_rotated)
+                        # rcu_constraints.append(px_rotated)
+                        # rcu_constraints.append(py_rotated)
+                        # rcu_constraints.append(pos_bool)
+                        # rcu_constraints.append(no_rotation)
+                        # rcu_constraints.append(rotated)
+
+                    model.Add(conn_x == px_non_rotated).OnlyEnforceIf(no_rotation, pos_bool)
+                    model.Add(conn_y == py_non_rotated).OnlyEnforceIf(no_rotation, pos_bool)
+                    model.Add(conn_x == px_rotated).OnlyEnforceIf(rotated, pos_bool)
+                    model.Add(conn_y == py_rotated).OnlyEnforceIf(rotated, pos_bool)
+
+                    # Ensure conn_x and conn_y are not constrained when pos_bool is False
+                    model.Add(conn_x != px_non_rotated).OnlyEnforceIf(pos_bool.Not())
+                    model.Add(conn_y != py_non_rotated).OnlyEnforceIf(pos_bool.Not())
+                    model.Add(conn_x != px_rotated).OnlyEnforceIf(pos_bool.Not())
+                    model.Add(conn_y != py_rotated).OnlyEnforceIf(pos_bool.Not())
+                else:
+                    raise ValueError(f"unknown position {pos}")
+        model.add_exactly_one(pos_bools)
+        return conns_x, conns_y, pos_bools
 
         # rotated_position = get_rotated_position(pos, is_rotated)
 
@@ -268,8 +311,11 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
     unweighted_distances = []
     connection_infos = []  # Store connection information
     debug_vars = []  # Store variables for debugging
+    connection_details = []
+    pos_bools = []
 
     for conn in connections:
+        combination_vars = []
         if isinstance(conn, Connection):
             name1, name2, pos1, pos2, weight = conn.source, conn.target, conn.source_pos, conn.target_pos, conn.weight
         else:
@@ -288,46 +334,73 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
         (no_rotation1, rotated1) = rotations[name1]
         (no_rotation2, rotated2) = rotations[name2]
 
-        start_x, start_y = get_connection_point(model, name1, pos1, x1, y1, w1, h1, no_rotation1, rotated1)
-        end_x, end_y = get_connection_point(model, name2, pos2, x2, y2, w2, h2, no_rotation2, rotated2)
+        starts_x, starts_y, pos_bools_start = get_connection_point(model, name1, 'start', pos1, x1, y1, w1, h1, no_rotation1, rotated1)
+        ends_x, ends_y, ends_pos_bools = get_connection_point(model, name2, 'end', pos2, x2, y2, w2, h2, no_rotation2, rotated2)
+        pos_bools.extend(pos_bools_start)
+        pos_bools.extend(ends_pos_bools)
 
-        # model.Add(start_x >= x1)
-        # model.Add(start_x <= x1 + w1)
+        start_indices = range(len(starts_x))
+        end_indices = range(len(ends_x))
 
-        # model.Add(end_x >= x2)
-        # model.Add(end_x <= x2 + w2)
+        for (start_index, start_x, start_y), (end_index, end_x, end_y) in product(
+                zip(start_indices, starts_x, starts_y),
+                zip(end_indices, ends_x, ends_y)
+            ):
 
-        # model.Add(start_y >= y1)
-        # model.Add(start_y <= y1 + h1)
+            # Create a boolean variable for this combination
+            combination_var = model.new_bool_var(f'use_connection_{name1}_to_{name2}_{start_x}_{start_y}_to_{end_x}_{end_y}')
+            start_combo_activated = pos_bools_start[start_index]
+            end_combo_activated = ends_pos_bools[end_index]
 
-        # model.Add(end_y >= y2)
-        # model.Add(end_y <= y2 + h2)
+            model.Add(combination_var <= start_combo_activated)
+            model.Add(combination_var <= end_combo_activated)
+            model.Add(combination_var >= start_combo_activated + end_combo_activated - 1)
 
-        dx = model.NewIntVar(-grid_size[0], grid_size[0], f'dx_{name1}_{name2}')
-        model.add_hint(dx, 0)
-        dy = model.NewIntVar(-grid_size[1], grid_size[1], f'dy_{name1}_{name2}')
-        model.add_hint(dy, 0)
-        # print(f"dx: {dx}, {end_x - start_x}")
+            # Create variables and constraints for this combination
+            dx = model.NewIntVar(-grid_size[0], grid_size[0], f'dx_{name1}_{name2}_{start_x}_{start_y}_{end_x}_{end_y}')
+            dy = model.NewIntVar(-grid_size[1], grid_size[1], f'dy_{name1}_{name2}_{start_x}_{start_y}_{end_x}_{end_y}')
 
-        model.Add(dx == end_x - start_x)
-        model.Add(dy == end_y - start_y)
+            model.Add(dx == end_x - start_x)
+            model.Add(dy == end_y - start_y)
 
-        abs_dx = model.NewIntVar(0, grid_size[0], f'abs_dx_{name1}_{name2}')
-        model.add_hint(abs_dx, 10)
-        abs_dy = model.NewIntVar(0, grid_size[1], f'abs_dy_{name1}_{name2}')
-        model.add_hint(abs_dy, 10)
+            abs_dx = model.NewIntVar(0, grid_size[0], f'abs_dx_{name1}_{name2}_{start_x}_{start_y}_{end_x}_{end_y}')
+            abs_dy = model.NewIntVar(0, grid_size[1], f'abs_dy_{name1}_{name2}_{start_x}_{start_y}_{end_x}_{end_y}')
 
-        model.AddAbsEquality(abs_dx, dx)
-        model.AddAbsEquality(abs_dy, dy)
+            # Replace AddAbsEquality with equivalent constraints
+            model.Add(abs_dx >= dx)
+            model.Add(abs_dx >= -dx)
+            model.Add(abs_dy >= dy)
+            model.Add(abs_dy >= -dy)
 
-        manhattan_distance = model.NewIntVar(0, grid_size[0] + grid_size[1], f'manhattan_dist_{name1}_{name2}')
-        model.Add(manhattan_distance == abs_dx + abs_dy)
 
-        weighted_distance = model.NewIntVar(0, (grid_size[0] + grid_size[1]) * 100, f'weighted_dist_{name1}_{name2}')
-        model.AddMultiplicationEquality(weighted_distance, [manhattan_distance, weight])
+            manhattan_distance = model.NewIntVar(0, grid_size[0] + grid_size[1], f'manhattan_dist_{name1}_{name2}_{start_x}_{start_y}_{end_x}_{end_y}')
 
-        weighted_distances.append(weighted_distance)
-        unweighted_distances.append(manhattan_distance)
+            model.Add(manhattan_distance == abs_dx + abs_dy).OnlyEnforceIf(combination_var)
+            model.Add(manhattan_distance == 0).OnlyEnforceIf(combination_var.Not())
+
+            # if name2 == "Red Circuit - RCU":
+                # print(f"start_x: {start_x}")
+                # print(f"end_x: {end_x}")
+                # print(f"start_y: {start_y}")
+                # print(f"end_y: {end_y}")
+                # print()
+                # rcu_constraints.add(combination_var)
+
+            weighted_distance = model.NewIntVar(0, (grid_size[0] + grid_size[1]) * weight, f'weighted_dist_{name1}_{name2}_{start_x}_{start_y}_{end_x}_{end_y}')
+            model.AddMultiplicationEquality(weighted_distance, manhattan_distance, weight)
+
+            combination_vars.append(combination_var)
+            # if name2 == "Red Circuit - RCU":
+                # combo_vars.append(combination_var)
+                # combo_vars.append(abs_dx)
+                # combo_vars.append(abs_dy)
+                # combo_vars.append(manhattan_distance)
+                # combo_vars.append(weighted_distance)
+            connection_details.append((combination_var, name1, name2, start_x, start_y, end_x, end_y))
+            weighted_distances.append(weighted_distance)
+
+        # Ensure exactly one combination is chosen
+        model.AddExactlyOne(combination_vars)
 
         debug_vars.append({
             'name': f"{name1}-{name2}",
@@ -354,11 +427,11 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
     solver.parameters.log_search_progress = True
     solver.parameters.log_subsolver_statistics = True
     # solver.parameters.extra_subsolvers.append("lb_tree_search")
-    solver.parameters.ignore_subsolvers.append("reduced_costs")
-    solver.parameters.ignore_subsolvers.append("pseudo_costs")
-    solver.parameters.ignore_subsolvers.append("objective_shaving_search_max_lp")
-    solver.parameters.ignore_subsolvers.append("objective_shaving_search_no_lp")
-    solver.parameters.ignore_subsolvers.append("default_lp")
+    # solver.parameters.ignore_subsolvers.append("reduced_costs")
+    # solver.parameters.ignore_subsolvers.append("pseudo_costs")
+    # solver.parameters.ignore_subsolvers.append("objective_shaving_search_max_lp")
+    # solver.parameters.ignore_subsolvers.append("objective_shaving_search_no_lp")
+    # solver.parameters.ignore_subsolvers.append("default_lp")
     # solver.parameters.optimize_with_lb_tree_search = True
     # solver.parameters.use_strong_propagation_in_disjunctive = True
     # solver.parameters.use_area_energetic_reasoning_in_no_overlap_2d = True
@@ -372,6 +445,8 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
     solution_printer = VarArraySolutionPrinter(all_vars)
     best_seen = None
     best_positions = None
+    best_connection_details = None
+    best_solver = None
     status = solver.Solve(model, solution_printer)
 
     print(f"Solver status: {solver.StatusName(status)}")
@@ -382,12 +457,32 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         total_weighted_distance_value = solver.Value(total_weighted_distance)
         if best_seen is None or total_weighted_distance_value < best_seen:
+            best_solver = solver
             best_seen = total_weighted_distance_value
             best_positions = { name: (
                 solver.Value(pos[0]),
                 solver.Value(pos[1]),
                 solver.BooleanValue(rotations[name][1]),
             ) for name, pos in positions.items() }
+            best_connection_details = connection_details
+
+        for bol in pos_bools:
+            # if solver.BooleanValue(bol):
+                # print(bol)
+            # else:
+                # print(f"not chosen: {bol}")
+            pass
+
+        for connection in connection_details:
+            pass
+            # print(f"connection: {connection}")
+            # if solver.BooleanValue(connection[0]):
+                # chosen_connections.append({
+                    # 'start_x': solver.Value(connection[1]),
+                    # 'start_y': solver.Value(connection[2]),
+                    # 'end_x': solver.Value(connection[3]),
+                    # 'end_y': solver.Value(connection[4])
+                # })
 
         total_unweighted_distance = sum(solver.Value(d) for d in unweighted_distances)
 
@@ -445,7 +540,7 @@ def optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, ma
             print()
         """
 
-    return best_positions, best_seen
+    return best_solver, best_positions, best_seen, best_connection_details
 
 
 def get_rotated_position(pos, is_rotated):
@@ -505,7 +600,27 @@ def estimate_text_height(text, font_prop, width):
     lines = [text[i:i+chars_per_line] for i in range(0, len(text), chars_per_line)]
     return len(lines) * font_size * 1.2  # 1.2 for line spacing
 
-def visualize_layout(blocks, connections, optimal_positions, grid_size, total_distance):
+def get_chosen_connections(solver, connection_details):
+    chosen_connections = []
+    for connection in connection_details:
+        # print(f"connection: {connection}")
+        if solver.BooleanValue(connection[0]):
+            chosen_connections.append({
+                'start_x': solver.Value(connection[3]),
+                'start_y': solver.Value(connection[4]),
+                'end_x': solver.Value(connection[5]),
+                'end_y': solver.Value(connection[6])
+            })
+    return chosen_connections
+
+def visualize_layout(solver, blocks, connection_details, optimal_positions, grid_size, total_distance):
+    # for val in rcu_constraints:
+        # print(val)
+        # print(solver.Value(val))
+    # print("combo_vars ===============================")
+    # for var in combo_vars:
+        # print(var)
+        # print(solver.Value(var))
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.set_xlim(0, grid_size[0])
     ax.set_ylim(0, grid_size[1])
@@ -561,11 +676,10 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
             # best_text.set_text('\n'.join(wrapped_text))
 
     # Draw connections
-    for conn in connections:
-        if isinstance(conn, Connection):
-            name1, name2, pos1, pos2, weight = conn.source, conn.target, conn.source_pos, conn.target_pos, conn.weight
-        else:
-            name1, name2, pos1, pos2 = conn
+    chosen_conns = get_chosen_connections(solver, connection_details)
+    for conn in chosen_conns:
+        start_x, start_y, end_x, end_y = conn['start_x'], conn['start_y'], conn['end_x'], conn['end_y']
+        """
         try:
             x1, y1, is_rotated1 = optimal_positions[name1]
             x2, y2, is_rotated2 = optimal_positions[name2]
@@ -590,6 +704,7 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
         # Get start and end points based on specified positions
         start_x, start_y = get_connection_point(x1, y1, w1, h1, pos1, is_rotated1)
         end_x, end_y = get_connection_point(x2, y2, w2, h2, pos2, is_rotated2)
+        """
 
         # Calculate vector and shorten the end point
         dx, dy = end_x - start_x, end_y - start_y
@@ -601,7 +716,7 @@ def visualize_layout(blocks, connections, optimal_positions, grid_size, total_di
 
         # Draw the arrow
         ax.annotate('', xy=(end_x, end_y), xytext=(start_x, start_y),
-                    arrowprops=dict(arrowstyle='->', color='red', lw=1.5),
+                    arrowprops=dict(arrowstyle='->', color='#FF9999', lw=1),
                     annotation_clip=False)
 
     watermark_text = f"github.com/kevinburke/factorio-layout-optimizer\ndistance: {total_distance}"
@@ -645,19 +760,24 @@ def main():
         max_time = args.time
         runs = args.runs
 
-    print("Attempting to solve with rotation...")
+    # print("Attempting to solve with rotation...")
+    print(f"blocks: {blocks}")
     best_positions = None
     best_total_distance = None
+    best_solver = None
+    best_connection_details = None
     for i in range(runs):
-        optimal_positions, total_distance = optimize_factory_layout(blocks, connections, grid_size, rotatable_blocks, max_time / runs, allow_rotation=True)
+        solver, optimal_positions, total_distance, connection_details = optimize_factory_layout(blocks, connections, grid_size, max_time / runs, allow_rotation=True)
         if best_total_distance is None or total_distance < best_total_distance:
             best_total_distance = total_distance
             best_positions = optimal_positions
+            best_solver = solver
+            best_connection_details = connection_details
 
     if best_positions:
         for name, (x, y, is_rotated) in best_positions.items():
             print(f"{name}: position ({x}, {y}), {'rotated' if is_rotated else 'not rotated'}")
-        visualize_layout(blocks, connections, best_positions, grid_size, best_total_distance)
+        visualize_layout(best_solver, blocks, best_connection_details, best_positions, grid_size, best_total_distance)
     else:
         print("No solution found in either attempt.")
 

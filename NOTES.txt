@@ -23,3 +23,11 @@ run 19:
     solver.parameters.ignore_subsolvers.append("objective_shaving_search_max_lp")
     solver.parameters.ignore_subsolvers.append("objective_shaving_search_no_lp")
     solver.parameters.ignore_subsolvers.append("default_lp")
+
+run 20:
+
+    try the old overlap logic again
+
+run 26:
+
+    fixed "one of" logic - actually optimizes correctly now.

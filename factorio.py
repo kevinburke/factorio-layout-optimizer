@@ -19,6 +19,10 @@ class Connection:
         self.target_pos = target_pos
         self.weight = int(weight * 10)
 
+class OneOf:
+    def __init__(self, *args):
+        self.conns = args
+
 def electric_smelter(num_furnaces):
     # https://www.factorio.school/view/-LM4FAS99hG83TEAl_9T
 
@@ -404,13 +408,15 @@ rotatable_blocks = {
     'Yellow Science',
 }
 
+circuit_plastic_oo = OneOf("LM", "RM")
+
 connections = [
-    Connection("Coal Mine", "Copper Smelting - LDS", "MM", "BM", 1),
-    Connection("Copper Mine", "Copper Smelting - LDS", "MM", "BM", 1),
-    Connection("Coal Mine", "Copper Smelting - GC", "MM", "BM", 1.5),
-    Connection("Copper Mine", "Copper Smelting - GC", "MM", "BM", 4),
-    Connection("Coal Mine", "Copper Smelting - Other", "MM", "BM", 1),
-    Connection("Copper Mine", "Copper Smelting - Other", "MM", "BM", 1),
+    Connection("Coal Mine", "Copper Smelting - LDS", "MM", "LM", 1),
+    Connection("Copper Mine", "Copper Smelting - LDS", "MM", "LM", 1),
+    Connection("Coal Mine", "Copper Smelting - GC", "MM", OneOf("LM", "RM"), 1.5),
+    Connection("Copper Mine", "Copper Smelting - GC", "MM", "LM", 4),
+    Connection("Coal Mine", "Copper Smelting - Other", "MM", "LM", 1),
+    Connection("Copper Mine", "Copper Smelting - Other", "MM", "LM", 1),
 
     Connection("Coal Mine", "Iron Smelting - Steel", "MM", "LM", 1),
     Connection("Coal Mine", "Iron Smelting - GC", "MM", "LM", 1),
@@ -420,9 +426,11 @@ connections = [
     Connection("Iron Mine", "Iron Smelting - GC", "MM", "LM", 2),
     Connection("Iron Mine", "Iron Smelting - Other", "MM", "LM", 1),
 
-    Connection("Iron Smelting - Steel", "Steel Smelting - Purple", "RM", "LM", 2),
+    Connection("Iron Smelting - Steel", "Steel Smelting - Purple",
+               OneOf("RM", "LM"), OneOf("LM", "RM"), 2),
     ("Coal Mine", "Steel Smelting - Purple", "MM", "LM"),
-    Connection("Iron Smelting - Steel", "Steel Smelting - Other", "RM", "LM", 2),
+    Connection("Iron Smelting - Steel", "Steel Smelting - Other",
+               OneOf("LM", "RM"), OneOf("LM", "RM"), 2),
     ("Coal Mine", "Steel Smelting - Other", "MM", "LM"),
 
     ("Stone Mine", "Stone Smelting", "RM", "LM"),
@@ -432,22 +440,24 @@ connections = [
     Connection("Iron Smelting - GC", "Green Circuit Assembly - Red", "RM", "BM", 1),
     Connection("Iron Smelting - GC", "Green Circuit Assembly - Other", "RM", "BM", 1),
 
-    Connection("Copper Smelting - GC", "Green Circuit Assembly - Blue", "RM", "BL", 2),
-    Connection("Copper Smelting - GC", "Green Circuit Assembly - Red", "RM", "BL", 1),
-    Connection("Copper Smelting - GC", "Green Circuit Assembly - Other", "RM", "BL", 1),
+    Connection("Copper Smelting - GC", "Green Circuit Assembly - Blue", OneOf("LM", "RM"), "BL", 2),
+    Connection("Copper Smelting - GC", "Green Circuit Assembly - Red",
+               OneOf("LM", "RM"), "BL", 1),
+    Connection("Copper Smelting - GC", "Green Circuit Assembly - Other",
+               OneOf("LM", "RM"), "BL", 1),
 
     Connection("Coal Mine", "Power Plant", "RM", "MM", math.ceil(boilers/20)),
     Connection("Water", "Power Plant", "RM", "MM", math.ceil(boilers/20)),
 
-    ("Iron Smelting - Other", "Inserter Mall", "RM", "BL"),
+    ("Iron Smelting - Other", "Inserter Mall", OneOf("LM", "RM"), "BL"),
     ("Green Circuit Assembly - Other", "Inserter Mall", "BM", "BR"),
 
-    ("Iron Smelting - Other", "Assembler Mall", "RM", "TL"),
+    ("Iron Smelting - Other", "Assembler Mall", OneOf("LM", "RM"), "TL"),
     ("Green Circuit Assembly - Other", "Assembler Mall", "BM", "TL"),
-    ("Steel Smelting - Other", "Assembler Mall", "RM", "BL"),
+    ("Steel Smelting - Other", "Assembler Mall", OneOf("LM", "RM"), "BL"),
 
-    ("Iron Smelting - Other", "Medium Power Pole Mall", "RM", "BL"),
-    ("Steel Smelting - Other", "Medium Power Pole Mall", "RM", "BR"),
+    ("Iron Smelting - Other", "Medium Power Pole Mall", OneOf("LM", "RM"), "BL"),
+    ("Steel Smelting - Other", "Medium Power Pole Mall", OneOf("LM", "RM"), "BR"),
     ("Copper Smelting - Other", "Medium Power Pole Mall", "BM", "BR"),
 
     ("Iron Smelting - Other", "Belt Mall", "RM", "TM"),
@@ -457,9 +467,10 @@ connections = [
     ("Light Oil Cracking", "Plastic", "RM", "TL"),
     ("Coal Mine", "Plastic", "MM", "LM"),
 
-    ("Copper Smelting - Other", "Red Circuit - RCU", "RM", "TL"),
-    ("Green Circuit Assembly - Red", "Red Circuit - RCU", "BM", "LM"),
-    ("Plastic", "Red Circuit - RCU", "RM", "LM"),
+    ("Copper Smelting - Other", "Red Circuit - RCU", "RM", OneOf("TL", "TR")),
+    ("Green Circuit Assembly - Red", "Red Circuit - RCU", "BM", OneOf("LM", "RM")),
+    ("Plastic", "Red Circuit - RCU", "RM", OneOf("LM", "RM",
+                                                 )),
     ("Copper Smelting - Other", "Red Circuit - Other", "RM", "TL"),
     ("Green Circuit Assembly - Red", "Red Circuit - Other", "BM", "LM"),
     ("Plastic", "Red Circuit - Other", "RM", "LM"),
@@ -478,41 +489,41 @@ connections = [
     ("Advanced Oil Processing", "Lubricant", "TL", "MM"),
 
     ("Water", "Sulfuric Acid", "MM", "MM"),
-    ("Iron Smelting - Other", "Sulfuric Acid", "RM", "MM"),
+    ("Iron Smelting - Other", "Sulfuric Acid", OneOf("LM", "RM"), "MM"),
     ("Sulfur", "Sulfuric Acid", "MM", "MM"),
 
     ("Sulfuric Acid", "Blue Circuit Assembly", "MM", "TL"),
     ("Green Circuit Assembly - Blue", "Blue Circuit Assembly", "BM", "BM"),
     ("Red Circuit - Other", "Blue Circuit Assembly", "LM", "BM"),
 
-    ("Steel Smelting - Other", "Low Density Structure", "RM", "MM"),
+    ("Steel Smelting - Other", "Low Density Structure", OneOf("LM", "RM"), "MM"),
     ("Plastic", "Low Density Structure", "RM", "MM"),
     ("Copper Smelting - LDS", "Low Density Structure", "RM", "MM"),
 
     ("Green Circuit Assembly - Other", "Speed Module", "BM", "MM"),
-    ("Red Circuit - Other", "Speed Module", "LM", "MM"),
+    ("Red Circuit - RCU", "Speed Module", "LM", "MM"),
 
-    Connection("Iron Smelting - Other", "Red Science", "RM", "TR", 2),
+    Connection("Iron Smelting - Other", "Red Science", OneOf("LM", "RM"), "TR", 2),
     Connection("Copper Smelting - Other", "Red Science", "RM", "TR", 2),
 
-    ("Iron Smelting - Other", "Green Science", "RM", "TR"),
+    ("Iron Smelting - Other", "Green Science", OneOf("LM", "RM"), "TR"),
     ("Green Circuit Assembly - Other", "Green Science", "BM", "TR"),
 
-    ("Iron Smelting - Other", "Blue Science", "RM", "TL"),
-    ("Steel Smelting - Other", "Blue Science", "RM", "TM"),
+    ("Iron Smelting - Other", "Blue Science", OneOf("LM", "RM"), "TL"),
+    ("Steel Smelting - Other", "Blue Science", OneOf("LM", "RM"), "TM"),
     ("Red Circuit - Other", "Blue Science", "LM", "TR"),
     ("Sulfur", "Blue Science", "MM", "TR"),
 
     ("Lubricant", "Yellow Science", "MM", "BL"),
     ("Green Circuit Assembly - Other", "Yellow Science", "BM", "TL"),
-    ("Steel Smelting - Other", "Yellow Science", "RM", "TM"),
-    ("Iron Smelting - Other", "Yellow Science", "RM", "TL"),
+    ("Steel Smelting - Other", "Yellow Science", OneOf("LM", "RM"), "TM"),
+    ("Iron Smelting - Other", "Yellow Science", OneOf("LM", "RM"), "TL"),
     ("Plastic", "Yellow Science", "MM", "MM"),
     ("Copper Smelting - LDS", "Yellow Science", "RM", "TR"),
     ("Battery", "Yellow Science", "MM", "TL"),
     ("Blue Circuit Assembly", "Yellow Science", "MM", "TM"),
 
-    ("Steel Smelting - Purple", "Purple Science", "RM", "TL"),
+    ("Steel Smelting - Purple", "Purple Science", OneOf("LM", "RM"), "TL"),
     ("Iron Smelting - Other", "Purple Science", "RM", "TL"),
     ("Stone Mine", "Purple Science", "RM", "TL"),
     ("Stone Smelting", "Purple Science", "RM", "TM"),
@@ -552,7 +563,7 @@ connections = [
     ("Concrete", "Rocket Silo Assembler", "MM", "MM"),
     ("Electric Engine Unit", "Rocket Silo Assembler", "MM", "MM"),
     ("Blue Circuit Assembly", "Rocket Silo Assembler", "MM", "MM"),
-    ("Steel Smelting - Other", "Rocket Silo Assembler", "RM", "MM"),
+    ("Steel Smelting - Other", "Rocket Silo Assembler", OneOf("LM", "RM"), "MM"),
 
     ("Rocket Fuel", "Rocket", "MM", "MM"),
     ("Low Density Structure", "Rocket", "MM", "MM"),
