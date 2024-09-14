@@ -80,15 +80,11 @@ def optimize_factory_layout(blocks, connections, grid_size, max_time, allow_rota
         else:
             x1 = model.NewIntVar(0, grid_size[0] - min(width, height), f'x_start_{name}')
             model.add_hint(x1, math.ceil(grid_size[0]//2))
-            if name == "Lab":
-                print(x1.Proto())
             x_starts.append(x1)
             x_ends.append(model.NewIntVar(0+min(width, height), grid_size[0], f'x_end_{name}'))
 
             y1 = model.NewIntVar(0, grid_size[1] - min(width, height), f'y_start_{name}')
             model.add_hint(y1, math.ceil(grid_size[1]//2))
-            if name == "Lab":
-                print(y1.Proto())
             y_starts.append(y1)
             y_ends.append(model.NewIntVar(0+min(width, height), grid_size[1], f'y_end_{name}'))
 
@@ -97,11 +93,6 @@ def optimize_factory_layout(blocks, connections, grid_size, max_time, allow_rota
                 x_sizes.append(x_size)
                 y_size = model.NewIntVarFromDomain(cp_model.Domain.FromValues([width, height]), f"y_size_{name}")
                 y_sizes.append(y_size)
-                if name == "Lab":
-                    print(x_size)
-                    print(y_size)
-                    print(cp_model.Domain.FromValues([width, height]))
-                    print([width, height])
             else:
                 x_size = model.NewConstant(width)
                 x_sizes.append(x_size)

@@ -31,3 +31,7 @@ run 20:
 run 26:
 
     fixed "one of" logic - actually optimizes correctly now.
+
+run 27:
+
+    way dialed down building based on realistic mine production values

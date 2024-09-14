@@ -23,6 +23,13 @@ class OneOf:
     def __init__(self, *args):
         self.conns = args
 
+def rocket_control_unit(total_units):
+    num_units = math.ceil(total_units / 4)
+    num_stacks = math.ceil(num_units / 3)
+    if num_stacks >= 2:
+        return (19*num_stacks, 10*3)
+    return (19, 10*num_units)
+
 def electric_smelter(num_furnaces):
     # https://www.factorio.school/view/-LM4FAS99hG83TEAl_9T
 
@@ -54,7 +61,7 @@ def green_circuit(num_assemblers):
     width = min(26, packs * 13)
 
     # lazy https://claude.ai/chat/f936dad3-e427-42a9-b516-da32f2fd5a23
-    # add height at the bottom for input and belts
+    # add 4 height at the bottom for input and belts
     if packs <= 2:
         height = 13 + 4
     elif packs <= 4:
@@ -78,7 +85,8 @@ def red_circuit(num_assemblers):
         return (4 + 4*num_assemblers, 8)
     # 4 height for every two assemblers
     # 4 height for every 2 copper coil assemblers
-    return (math.ceil(copper_coils/2)*4 + math.ceil(num_assemblers/2)*4, 14)
+    # 5 height for pipe organization
+    return (5 + math.ceil(copper_coils/2)*4 + math.ceil(num_assemblers/2)*4, 16)
 
 def blue_circuit(num_assemblers):
     # https://www.factorio.school/view/-KpX1-lyYhE-3-DfxTba
@@ -126,6 +134,9 @@ def min_speed_module(num_assemblers):
 def solid_fuel(num_plants):
     # ??
     # https://www.factorio.school/view/-L_dgvit-TLeoWF3EL6K
+    num_stacks = math.ceil(num_plants/8)
+    if num_stacks >= 2:
+        return (7*num_stacks, 8 * 3 + 5)
     return (7, math.ceil(num_plants) * 3 + 5)
 
 def rocket_fuel(num_assemblers):
@@ -192,11 +203,10 @@ rocket_blocks = {
     "Solid Fuel": solid_fuel(6.7),
     "Rocket Fuel": rocket_fuel(13.4),
 
-    # one speed module assembler can feed three RCU's
-    "Rocket Control Unit": electric_smelter(20),
+    "Rocket Control Unit": rocket_control_unit(20),
 
     "Rocket Silo Assembler": (6, 6),
-    "Rocket": (10, 10),
+    "Rocket": (11, 11),
 }
 
 # ratios:
@@ -227,26 +237,26 @@ grid_size = (32*16, 32*8)
 max_x, max_y = grid_size
 default_hint_x = max_x/4
 
-required_power_mw = 150
-boilers = math.ceil(required_power_mw/1.8)
+everything_required_power_mw = 150
+everything_boilers = math.ceil(everything_required_power_mw/1.8)
 
 # 2460 green circuits/minute. 2.8 belts. 1300 go to blue circuit, 850 go to
 #      red circuit
 # Each assembler = 90/minute
 # 4 green circuit assemblers = 360/minute
-total_green_circuits = 27.4
+everything_total_green_circuits = 27.4
 
 # 425 red circuits/minute, half a belt
-total_red_circuits = 56.7
+everything_total_red_circuits = 56.7
 
 # 6338 iron plates/minute. one block is 24 smelters
-total_iron_smelting = 169.1
+everything_total_iron_smelting = 169.1
 
-total_steel_smelting = 87.4
+everything_total_steel_smelting = 87.4
 
-total_copper_smelting = 157.4
+everything_total_copper_smelting = 157.4
 
-blocks = {
+everything_blocks = {
     # top left is (0, 0)
     "Copper Mine": Block(28, 28, fixed_x=7*32+2, fixed_y=38),
     # the ore mine a little narrower than reality so it doesn't conflict with
@@ -260,27 +270,38 @@ blocks = {
 
     # stone mine and cliffs 6, also cliffs 3 and 5.
 
-    "Cliffs": Block(20, 25, fixed_x=6*32+20, fixed_y=3*32),
-    "Cliffs 2": Block(24, 20, fixed_x=7*32+12, fixed_y=2*32+10),
-    "Cliffs 3": Block(36, 15, fixed_x=5*32-5, fixed_y=2*32-10),
-    "Cliffs 4": Block(18, 36, fixed_x=6*32, fixed_y=16),
-    "Cliffs 5": Block(34, 32-10, fixed_x=4*32-6, fixed_y=32-3),
-    "Cliffs 6": Block(24, 26, fixed_x=1*32+14, fixed_y=2*32+1),
+    # down and left of cliffs 2
+    "Cliffs": Block(20, 25, fixed_x=6*32+17, fixed_y=3*32+1),
 
-    "Power Plant": power_plant(power_mw=required_power_mw),
+    # down from copper mine
+    "Cliffs 2": Block(24, 30, fixed_x=7*32+9, fixed_y=2*32+10),
+
+    # left of copper mine, closest to the base
+    "Cliffs 3": Block(34, 14, fixed_x=5*32-6, fixed_y=2*32-12),
+
+    # right, up of cliffs 3
+    "Cliffs 4": Block(18, 36, fixed_x=6*32-2, fixed_y=16),
+
+    # left, up of cliffs 3
+    "Cliffs 5": Block(35, 32-10, fixed_x=4*32-8, fixed_y=32-3),
+
+    # next to stone mine
+    "Cliffs 6": Block(24, 26, fixed_x=1*32+12, fixed_y=2*32+1),
+
+    "Power Plant": power_plant(power_mw=everything_required_power_mw),
 
     # ~34.7 for LDS
     "Copper Smelting - LDS": electric_smelter(24),
     # 98.4 for green circuits
     "Copper Smelting - GC": electric_smelter(24*4),
-    "Copper Smelting - Other": electric_smelter(total_copper_smelting - 24*4 - 24),
+    "Copper Smelting - Other": electric_smelter(everything_total_copper_smelting - 24*4 - 24),
 
     "Iron Smelting - Steel": electric_smelter(24*3),
     "Iron Smelting - GC": electric_smelter(24*2),
-    "Iron Smelting - Other": electric_smelter(total_iron_smelting - 24*3 - 24*2),
+    "Iron Smelting - Other": electric_smelter(everything_total_iron_smelting - 24*3 - 24*2),
 
     "Steel Smelting - Purple": electric_smelter(24*2),
-    "Steel Smelting - Other": electric_smelter(total_steel_smelting - 24*2),
+    "Steel Smelting - Other": electric_smelter(everything_total_steel_smelting - 24*2),
 
     "Stone Smelting": electric_smelter(3.7),
 
@@ -303,11 +324,11 @@ blocks = {
     "Green Circuit Assembly - Red": green_circuit(4*2),
 
     # All others
-    "Green Circuit Assembly - Other": green_circuit(total_green_circuits - 4*3-4*2),
+    "Green Circuit Assembly - Other": green_circuit(everything_total_green_circuits - 4*3-4*2),
 
     # 4.66 blocks
     "Red Circuit - RCU": red_circuit(12),
-    "Red Circuit - Other": red_circuit(total_red_circuits - 12),
+    "Red Circuit - Other": red_circuit(everything_total_red_circuits - 12),
     "Blue Circuit Assembly": blue_circuit(14.5),
 
     # https://www.factorio.school/view/-M3UFESzD4DDkv8E__6l
@@ -379,10 +400,170 @@ blocks = {
     # 12 solid fuel for 40 boilers (72 MW)
     "Solid Fuel": solid_fuel(6.7 + 24),
     "Rocket Fuel": rocket_fuel(13.4),
-    "Rocket Control Unit": electric_smelter(20),
-    "Rocket": (11, 9),
+    "Rocket Control Unit": rocket_control_unit(20),
+    "Rocket": (15, 11),
 
-    "Lab": (19, 24),
+    "Lab": (17, 30),
+}
+
+required_power_mw = 80
+boilers = math.ceil(required_power_mw/1.8)
+
+# 900 green circuits/minute, one full belt
+total_green_circuits = 10
+
+# 185 red circuits/minute, half a belt
+total_red_circuits = 24.7
+
+# 3160 iron plates/minute. one block is 24 smelters
+total_iron_smelting = 84.3
+
+# 360 steel/minute
+# 1800 iron plates just for steel
+total_steel_smelting = 48
+
+# 2.64 copper plates/minute
+total_copper_smelting = 63.2
+
+blocks = {
+    # top left is (0, 0)
+    "Copper Mine": Block(28, 28, fixed_x=7*32+2, fixed_y=38),
+    # the ore mine a little narrower than reality so it doesn't conflict with
+    # the stone mine
+    "Iron Mine": Block(24, 32, fixed_x=1, fixed_y=2*32+10),
+    "Coal Mine": Block(1, 1, fixed_x=1, fixed_y=max_y-3*32+16),
+    # the stone mine is a bit narrower so it doesn't conflict with Cliffs 6.
+    "Stone Mine": Block(10, 20, fixed_x=32, fixed_y=2*32-2),
+    "Water": Block(60, 52, fixed_x=3*32+2, fixed_y=max_y-53),
+    "Oil": Block(1, 1, fixed_x=7*32+10, fixed_y=3*32-5),
+
+    # stone mine and cliffs 6, also cliffs 3 and 5.
+
+    "Cliffs": Block(20, 25, fixed_x=6*32+20, fixed_y=3*32),
+    "Cliffs 2": Block(24, 20, fixed_x=7*32+12, fixed_y=2*32+10),
+    "Cliffs 3": Block(36, 15, fixed_x=5*32-5, fixed_y=2*32-10),
+    "Cliffs 4": Block(18, 36, fixed_x=6*32, fixed_y=16),
+    "Cliffs 5": Block(34, 32-10, fixed_x=4*32-6, fixed_y=32-3),
+    "Cliffs 6": Block(24, 26, fixed_x=1*32+14, fixed_y=2*32+1),
+
+    "Power Plant": power_plant(power_mw=required_power_mw),
+
+    # "Copper Smelting - LDS": electric_smelter(24),
+    # 98.4 for green circuits
+    "Copper Smelting - GC": electric_smelter(24),
+    "Copper Smelting - Other": electric_smelter(total_copper_smelting - 24),
+
+    "Iron Smelting - Steel": electric_smelter(24*2),
+    "Iron Smelting - GC": electric_smelter(24),
+    "Iron Smelting - Other": electric_smelter(total_iron_smelting - 24*2 - 24),
+
+    # actual number is like 33
+    "Steel Smelting - Purple": electric_smelter(24),
+    "Steel Smelting - Other": electric_smelter(total_steel_smelting - 24),
+
+    "Stone Smelting": electric_smelter(2.7),
+
+    # https://www.reddit.com/r/factorio/comments/pkekhs/three_simple_tips_to_solve_all_your_oil/
+    "Advanced Oil Processing": advanced_oil(7),
+    # 1.2 crackers
+    # "Heavy Oil Cracking": (10, 10),
+    # need 4.9 light oil crackers - these are covered in advanced oil
+    # "Light Oil Cracking": (10, 10),
+
+    "Plastic": plastic(4.4),
+
+    # 2460 green circuits/minute. 2.8 belts. 1300 go to blue circuit, 850 go to
+    #      red circuit
+    # Each assembler = 90/minute
+
+    # For blue circuits
+    "Green Circuit Assembly - Blue": green_circuit(4),
+
+    # Red circuits
+    "Green Circuit Assembly - Red": green_circuit(4),
+
+    # All others
+    "Green Circuit Assembly - Other": green_circuit(total_green_circuits - 4 - 4),
+
+    # 4.66 blocks
+    "Red Circuit - RCU": red_circuit(12),
+    "Red Circuit - Other": red_circuit(total_red_circuits - 12),
+    "Blue Circuit Assembly": blue_circuit(14.5),
+
+    # https://www.factorio.school/view/-M3UFESzD4DDkv8E__6l
+    "Inserter Mall": (7, 28),
+
+    "Assembler Mall": (18, 7),
+    "Medium Power Pole Mall": (7, 8),
+
+    # https://www.factorio.school/view/-L8geV1--kQGYWiMW4v6
+    # Add some height for iron gear assembler
+    "Belt Mall": (18, 18),
+
+    # This is covered as part of Yellow Science
+    # "Low Density Structure": low_density_structure(20),
+
+    # tileable science: https://www.factorio.school/view/-KnQ865j-qQ21WoUPbd3
+
+    # 1 gear assembler
+    # only really need one side of the belt
+    "Red Science": (15, 12),
+
+    # 2 gear assemblers
+    # 1 inserter assembler
+    # 1 belt assembler
+    "Green Science": (18, 16),
+
+    # 12 blue science factories
+    # 10 engine assemblers
+    # 1 pipe assembler
+    # 1 gear assembler
+    # it's 25x18, but add some buffer for belt input/output
+    "Blue Science": (27, 18+6),
+    # "Blue Science": blue_science(12),
+
+    # 7 purple science uses:
+    # 3 rail assemblers
+    # 2 furnace assemblers
+    # 5 productivity module assemblers
+    # 2 iron assemblers
+    #
+    # add a third furnace in here
+    # 15 = 3 assemblers, plus add a lot for belts input/output
+    "Purple Science": (33, 15+6),
+
+    # 4 engine assemblers
+    # 4 electric engine assemblers
+    # 7 flying robot frames
+    #
+    # height is 10 assemblers, plus we typically need lots of belts
+    "Yellow Science": (41, 30+6),
+
+    # 0.2
+    "Sulfuric Acid": plastic(1),
+
+    # 0.3 - covered in advanced oil
+    "Lubricant": plastic(1),
+
+    "Battery": plastic(1.4),
+
+    # yellow science covers 4 of 5.6
+    "Electric Engine Unit": plastic(3),
+
+    "Sulfur": plastic(1),
+
+    "Concrete": plastic(1.7),
+
+    # 6.7 solid fuel for rocket fuel
+    #
+    # 12 solid fuel for 40 boilers (72 MW)
+    "Solid Fuel": solid_fuel(6.7 + 24),
+    "Rocket Fuel": rocket_fuel(13.4),
+    "Rocket Control Unit": rocket_control_unit(20),
+    "Rocket Silo Assembler": (6, 6),
+    "Rocket": (15, 11),
+
+    "Lab": (17, 30),
 }
 
 print("blocks: {}".format(blocks))
@@ -469,11 +650,10 @@ connections = [
 
     ("Copper Smelting - Other", "Red Circuit - RCU", "RM", OneOf("TL", "TR")),
     ("Green Circuit Assembly - Red", "Red Circuit - RCU", "BM", OneOf("LM", "RM")),
-    ("Plastic", "Red Circuit - RCU", "RM", OneOf("LM", "RM",
-                                                 )),
-    ("Copper Smelting - Other", "Red Circuit - Other", "RM", "TL"),
-    ("Green Circuit Assembly - Red", "Red Circuit - Other", "BM", "LM"),
-    ("Plastic", "Red Circuit - Other", "RM", "LM"),
+    ("Plastic", "Red Circuit - RCU", "RM", OneOf("LM", "RM")),
+    ("Copper Smelting - Other", "Red Circuit - Other", "RM", OneOf("TL", "TR")),
+    ("Green Circuit Assembly - Red", "Red Circuit - Other", "BM", OneOf("LM", "RM")),
+    ("Plastic", "Red Circuit - Other", "RM", OneOf("LM", "RM")),
 
     ("Heavy Oil Cracking", "Light Oil Cracking", "MM", "MM"),
 
@@ -537,6 +717,8 @@ connections = [
     ("Yellow Science", "Lab", "TM", "BL"),
     ("Purple Science", "Lab", "TR", "BL"),
 
+    ("Copper Smelting - Other", "Battery", "RM", "MM"),
+    ("Iron Smelting - Other", "Battery", "RM", "MM"),
     ("Sulfuric Acid", "Battery", "MM", "MM"),
 
     ("Advanced Oil Processing", "Solid Fuel", "TL", "MM"),
@@ -548,8 +730,9 @@ connections = [
 
     Connection("Solid Fuel", "Power Plant", "MM", "MM", 0.5),
 
-    ("Speed Module", "Rocket Control Unit", "MM", "MM"),
-    ("Blue Circuit Assembly", "Rocket Control Unit", "MM", "MM"),
+    ("Green Circuit Assembly - Other", "Rocket Control Unit", "BM", OneOf("BM", "TM")),
+    ("Red Circuit - RCU", "Rocket Control Unit", "LM", OneOf("BM", "TM")),
+    ("Blue Circuit Assembly", "Rocket Control Unit", "MM", OneOf("BM", "TM")),
 
     ("Water", "Concrete", "MM", "MM"),
     ("Iron Ore", "Concrete", "MM", "MM"),

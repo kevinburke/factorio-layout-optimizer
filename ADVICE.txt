@@ -1,0 +1,9 @@
+oil - remember that yellow pipes need to be on other side of pump from petroleum
+otherwise you won't get any yellow out
+
+1.5 yellow belts from smelter to LDS
+2.8 yellow belts from smelter to GC
+3.7 yellow belts from smelter to steel
+24 steel/electric smelters empty yellow input belt of ore
+Same number to entirely fill output belt
+10 chem plants for plastic fills 1.4 belts
