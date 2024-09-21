@@ -48,10 +48,10 @@ def electric_smelter(num_furnaces):
     # "4 + 4" covers belts to and from and associated splitting
     if num_furnaces < (24 * 2):
         # if we have fewer than 48, just put them in one long line 13 wide
-        return (4 + 4 + math.ceil(num_furnaces/2*3), 13)
+        return (4 + 4 + math.ceil(num_furnaces/2*3), 13+4)
     num_stacks = math.ceil(num_furnaces / 48)
     # each "stack" is a collection of 48 furnaces, 24 on either side of a belt
-    return (4 + 4 + 24*3, 13*num_stacks)
+    return (4 + 4 + 24*3, (13+3)*num_stacks)
 
 def green_circuit(num_assemblers):
     packs = math.ceil(num_assemblers/2)
@@ -111,7 +111,7 @@ def plastic(num_chemical_plants):
 def advanced_oil(num_oil_plants):
     # https://www.factorio.school/view/-LZpCwcZo6mMnV7TZdG1
     # https://fbe.teoxoy.com/?source=https://www.factorio.school/api/blueprintData/6dfc4516b341d0bdbbc56c22a2a74b65b28535a7/
-    return (22, 2+5+(5+1)*math.ceil(num_oil_plants))
+    return (29, 2+5+(5+1)*math.ceil(num_oil_plants))
 
 def low_density_structure(num_assemblers):
     # https://www.factorio.school/view/-M5Dma3GTTR-aB704Bxa
@@ -406,14 +406,21 @@ everything_blocks = {
     "Lab": (17, 30),
 }
 
+# just 30 of everything - if you turn it off when it's rocket time, you have
+# enough to cover the rocket
+# https://kirkmcdonald.github.io/calc.html#zip=dc07CoAwEATQ26QyELUykMMsa9DB/Eg2hbdXa5WBaR7MrCTkRn1nUVzcpCLS06Xm1U1GQXxsjrrkSIKcdGP4xF4X4sNWO5sh5A1NwB/Eu49gCh/0HHT+meyCADnfcgE=
+#
+# Then when it's time to build the rocket - switch to this
+# https://kirkmcdonald.github.io/calc.html#data=1-1-19&cp=2&min=2&mprod=20&items=rocket-part:r:7/2&modules=rocket-control-unit:pe:pe;se:3,processing-unit:pe:pe
+
 required_power_mw = 80
 boilers = math.ceil(required_power_mw/1.8)
 
 # 900 green circuits/minute, one full belt
-total_green_circuits = 10
+total_green_circuits = 13.41
 
 # 185 red circuits/minute, half a belt
-total_red_circuits = 24.7
+total_red_circuits = 29.61
 
 # 3160 iron plates/minute. one block is 24 smelters
 total_iron_smelting = 84.3
@@ -423,7 +430,7 @@ total_iron_smelting = 84.3
 total_steel_smelting = 48
 
 # 2.64 copper plates/minute
-total_copper_smelting = 63.2
+total_copper_smelting = 78.77
 
 blocks = {
     # top left is (0, 0)
@@ -450,16 +457,16 @@ blocks = {
 
     # "Copper Smelting - LDS": electric_smelter(24),
     # 98.4 for green circuits
-    "Copper Smelting - GC": electric_smelter(24),
-    "Copper Smelting - Other": electric_smelter(total_copper_smelting - 24),
+    # "Copper Smelting - GC": electric_smelter(24),
+    "Copper Smelting - Other": electric_smelter(total_copper_smelting),
 
-    "Iron Smelting - Steel": electric_smelter(24*2),
-    "Iron Smelting - GC": electric_smelter(24),
-    "Iron Smelting - Other": electric_smelter(total_iron_smelting - 24*2 - 24),
+    # "Iron Smelting - Steel": electric_smelter(24*2),
+    # "Iron Smelting - GC": electric_smelter(24),
+    "Iron Smelting - Other": electric_smelter(total_iron_smelting),
 
     # actual number is like 33
-    "Steel Smelting - Purple": electric_smelter(24),
-    "Steel Smelting - Other": electric_smelter(total_steel_smelting - 24),
+    # "Steel Smelting - Purple": electric_smelter(24),
+    "Steel Smelting - Other": electric_smelter(total_steel_smelting),
 
     "Stone Smelting": electric_smelter(2.7),
 
@@ -470,25 +477,21 @@ blocks = {
     # need 4.9 light oil crackers - these are covered in advanced oil
     # "Light Oil Cracking": (10, 10),
 
-    "Plastic": plastic(4.4),
-
-    # 2460 green circuits/minute. 2.8 belts. 1300 go to blue circuit, 850 go to
-    #      red circuit
-    # Each assembler = 90/minute
+    "Plastic": plastic(6),
 
     # For blue circuits
-    "Green Circuit Assembly - Blue": green_circuit(4),
+    # "Green Circuit Assembly - Blue": green_circuit(4),
 
     # Red circuits
-    "Green Circuit Assembly - Red": green_circuit(4),
+    # "Green Circuit Assembly - Red": green_circuit(4),
 
     # All others
-    "Green Circuit Assembly - Other": green_circuit(total_green_circuits - 4 - 4),
+    "Green Circuit Assembly - Other": green_circuit(total_green_circuits),
 
     # 4.66 blocks
-    "Red Circuit - RCU": red_circuit(12),
-    "Red Circuit - Other": red_circuit(total_red_circuits - 12),
-    "Blue Circuit Assembly": blue_circuit(14.5),
+    # "Red Circuit - RCU": red_circuit(12),
+    "Red Circuit - Other": red_circuit(total_red_circuits),
+    "Blue Circuit Assembly": blue_circuit(8),
 
     # https://www.factorio.school/view/-M3UFESzD4DDkv8E__6l
     "Inserter Mall": (7, 28),
@@ -519,7 +522,7 @@ blocks = {
     # 1 pipe assembler
     # 1 gear assembler
     # it's 25x18, but add some buffer for belt input/output
-    "Blue Science": (27, 18+6),
+    "Blue Science": (27+2, 18+6),
     # "Blue Science": blue_science(12),
 
     # 7 purple science uses:
@@ -530,40 +533,41 @@ blocks = {
     #
     # add a third furnace in here
     # 15 = 3 assemblers, plus add a lot for belts input/output
-    "Purple Science": (33, 15+6),
+    "Purple Science": (33+2, 15+6),
 
     # 4 engine assemblers
     # 4 electric engine assemblers
     # 7 flying robot frames
     #
     # height is 10 assemblers, plus we typically need lots of belts
-    "Yellow Science": (41, 30+6),
+    "Yellow Science": (41+4, 30+6),
 
     # 0.2
     "Sulfuric Acid": plastic(1),
 
     # 0.3 - covered in advanced oil
-    "Lubricant": plastic(1),
+    # "Lubricant": plastic(1),
 
     "Battery": plastic(1.4),
 
     # yellow science covers 4 of 5.6
-    "Electric Engine Unit": plastic(3),
+    # "Electric Engine Unit": plastic(3),
 
     "Sulfur": plastic(1),
 
-    "Concrete": plastic(1.7),
+    "Concrete": plastic(3),
 
     # 6.7 solid fuel for rocket fuel
     #
     # 12 solid fuel for 40 boilers (72 MW)
-    "Solid Fuel": solid_fuel(6.7 + 24),
-    "Rocket Fuel": rocket_fuel(13.4),
-    "Rocket Control Unit": rocket_control_unit(20),
+    "Solid Fuel": solid_fuel(12+24),
+    "Rocket Fuel": rocket_fuel(24),
+    "Rocket Control Unit": rocket_control_unit(18.01),
+    # may not end up using this, but helpful for colocating pieces
     "Rocket Silo Assembler": (6, 6),
     "Rocket": (15, 11),
 
-    "Lab": (17, 30),
+    "Lab": (17+4, 30+4),
 }
 
 print("blocks: {}".format(blocks))
@@ -596,8 +600,8 @@ connections = [
     Connection("Copper Mine", "Copper Smelting - LDS", "MM", "LM", 1),
     Connection("Coal Mine", "Copper Smelting - GC", "MM", OneOf("LM", "RM"), 1.5),
     Connection("Copper Mine", "Copper Smelting - GC", "MM", "LM", 4),
-    Connection("Coal Mine", "Copper Smelting - Other", "MM", "LM", 1),
-    Connection("Copper Mine", "Copper Smelting - Other", "MM", "LM", 1),
+    Connection("Coal Mine", "Copper Smelting - Other", "MM", "LM", 1.5),
+    Connection("Copper Mine", "Copper Smelting - Other", "MM", "LM", 3),
 
     Connection("Coal Mine", "Iron Smelting - Steel", "MM", "LM", 1),
     Connection("Coal Mine", "Iron Smelting - GC", "MM", "LM", 1),
@@ -605,27 +609,37 @@ connections = [
 
     Connection("Iron Mine", "Iron Smelting - Steel", "MM", "LM", 3),
     Connection("Iron Mine", "Iron Smelting - GC", "MM", "LM", 2),
-    Connection("Iron Mine", "Iron Smelting - Other", "MM", "LM", 1),
+    Connection("Iron Mine", "Iron Smelting - Other", "MM", "LM", 3.5),
 
-    Connection("Iron Smelting - Steel", "Steel Smelting - Purple",
-               OneOf("RM", "LM"), OneOf("LM", "RM"), 2),
-    ("Coal Mine", "Steel Smelting - Purple", "MM", "LM"),
-    Connection("Iron Smelting - Steel", "Steel Smelting - Other",
+    # Connection("Iron Smelting - Steel", "Steel Smelting - Purple",
+               # OneOf("RM", "LM"), OneOf("LM", "RM"), 2),
+    # ("Coal Mine", "Steel Smelting - Purple", "MM", "LM"),
+    # Connection("Iron Smelting - Steel", "Steel Smelting - Other",
+               # OneOf("LM", "RM"), OneOf("LM", "RM"), 2),
+    Connection("Iron Smelting - Other", "Steel Smelting - Other",
                OneOf("LM", "RM"), OneOf("LM", "RM"), 2),
     ("Coal Mine", "Steel Smelting - Other", "MM", "LM"),
 
     ("Stone Mine", "Stone Smelting", "RM", "LM"),
     ("Coal Mine", "Stone Smelting", "MM", "LM"),
 
-    Connection("Iron Smelting - GC", "Green Circuit Assembly - Blue", "RM", "BM", 1),
-    Connection("Iron Smelting - GC", "Green Circuit Assembly - Red", "RM", "BM", 1),
-    Connection("Iron Smelting - GC", "Green Circuit Assembly - Other", "RM", "BM", 1),
+    # Connection("Iron Smelting - GC", "Green Circuit Assembly - Blue", "RM", "BM", 1),
+    # Connection("Iron Smelting - GC", "Green Circuit Assembly - Red", "RM", "BM", 1),
+    # Connection("Iron Smelting - GC", "Green Circuit Assembly - Other", "RM", "BM", 1),
+    Connection("Iron Smelting - Other", "Green Circuit Assembly - Blue", "RM", "BM", 1),
+    Connection("Iron Smelting - Other", "Green Circuit Assembly - Red", "RM", "BM", 1),
+    Connection("Iron Smelting - Other", "Green Circuit Assembly - Other", "RM", "BM", 1),
 
-    Connection("Copper Smelting - GC", "Green Circuit Assembly - Blue", OneOf("LM", "RM"), "BL", 2),
-    Connection("Copper Smelting - GC", "Green Circuit Assembly - Red",
+    # Connection("Copper Smelting - GC", "Green Circuit Assembly - Blue", OneOf("LM", "RM"), "BL", 2),
+    # Connection("Copper Smelting - GC", "Green Circuit Assembly - Red",
+               # OneOf("LM", "RM"), "BL", 1),
+    # Connection("Copper Smelting - GC", "Green Circuit Assembly - Other",
+               # OneOf("LM", "RM"), "BL", 1),
+    Connection("Copper Smelting - Other", "Green Circuit Assembly - Blue", OneOf("LM", "RM"), "BL", 2),
+    Connection("Copper Smelting - Other", "Green Circuit Assembly - Red",
                OneOf("LM", "RM"), "BL", 1),
-    Connection("Copper Smelting - GC", "Green Circuit Assembly - Other",
-               OneOf("LM", "RM"), "BL", 1),
+    Connection("Copper Smelting - Other", "Green Circuit Assembly - Other",
+               OneOf("LM", "RM"), "BL", 2),
 
     Connection("Coal Mine", "Power Plant", "RM", "MM", math.ceil(boilers/20)),
     Connection("Water", "Power Plant", "RM", "MM", math.ceil(boilers/20)),
@@ -648,11 +662,14 @@ connections = [
     ("Light Oil Cracking", "Plastic", "RM", "TL"),
     ("Coal Mine", "Plastic", "MM", "LM"),
 
-    ("Copper Smelting - Other", "Red Circuit - RCU", "RM", OneOf("TL", "TR")),
-    ("Green Circuit Assembly - Red", "Red Circuit - RCU", "BM", OneOf("LM", "RM")),
-    ("Plastic", "Red Circuit - RCU", "RM", OneOf("LM", "RM")),
+    # ("Copper Smelting - Other", "Red Circuit - RCU", "RM", OneOf("TL", "TR")),
+    # ("Green Circuit Assembly - Red", "Red Circuit - RCU", "BM", OneOf("LM", "RM")),
+    # ("Plastic", "Red Circuit - RCU", "RM", OneOf("LM", "RM")),
+    # ("Copper Smelting - Other", "Red Circuit - Other", "RM", OneOf("TL", "TR")),
+    # ("Green Circuit Assembly - Red", "Red Circuit - Other", "BM", OneOf("LM", "RM")),
+    # ("Plastic", "Red Circuit - Other", "RM", OneOf("LM", "RM")),
     ("Copper Smelting - Other", "Red Circuit - Other", "RM", OneOf("TL", "TR")),
-    ("Green Circuit Assembly - Red", "Red Circuit - Other", "BM", OneOf("LM", "RM")),
+    ("Green Circuit Assembly - Other", "Red Circuit - Other", "BM", OneOf("LM", "RM")),
     ("Plastic", "Red Circuit - Other", "RM", OneOf("LM", "RM")),
 
     ("Heavy Oil Cracking", "Light Oil Cracking", "MM", "MM"),
@@ -676,12 +693,17 @@ connections = [
     ("Green Circuit Assembly - Blue", "Blue Circuit Assembly", "BM", "BM"),
     ("Red Circuit - Other", "Blue Circuit Assembly", "LM", "BM"),
 
+    # ("Steel Smelting - Other", "Low Density Structure", OneOf("LM", "RM"), "MM"),
+    # ("Plastic", "Low Density Structure", "RM", "MM"),
+    # ("Copper Smelting - LDS", "Low Density Structure", "RM", "MM"),
     ("Steel Smelting - Other", "Low Density Structure", OneOf("LM", "RM"), "MM"),
     ("Plastic", "Low Density Structure", "RM", "MM"),
-    ("Copper Smelting - LDS", "Low Density Structure", "RM", "MM"),
+    ("Copper Smelting - Other", "Low Density Structure", "RM", "MM"),
 
+    # ("Green Circuit Assembly - Other", "Speed Module", "BM", "MM"),
+    # ("Red Circuit - RCU", "Speed Module", "LM", "MM"),
     ("Green Circuit Assembly - Other", "Speed Module", "BM", "MM"),
-    ("Red Circuit - RCU", "Speed Module", "LM", "MM"),
+    ("Red Circuit - Other", "Speed Module", "LM", "MM"),
 
     Connection("Iron Smelting - Other", "Red Science", OneOf("LM", "RM"), "TR", 2),
     Connection("Copper Smelting - Other", "Red Science", "RM", "TR", 2),
@@ -694,16 +716,30 @@ connections = [
     ("Red Circuit - Other", "Blue Science", "LM", "TR"),
     ("Sulfur", "Blue Science", "MM", "TR"),
 
+    # ("Lubricant", "Yellow Science", "MM", "BL"),
+    # ("Green Circuit Assembly - Other", "Yellow Science", "BM", "TL"),
+    # ("Steel Smelting - Other", "Yellow Science", OneOf("LM", "RM"), "TM"),
+    # ("Iron Smelting - Other", "Yellow Science", OneOf("LM", "RM"), "TL"),
+    # ("Plastic", "Yellow Science", "MM", "MM"),
+    # ("Copper Smelting - LDS", "Yellow Science", "RM", "TR"),
+    # ("Battery", "Yellow Science", "MM", "TL"),
+    # ("Blue Circuit Assembly", "Yellow Science", "MM", "TM"),
     ("Lubricant", "Yellow Science", "MM", "BL"),
     ("Green Circuit Assembly - Other", "Yellow Science", "BM", "TL"),
     ("Steel Smelting - Other", "Yellow Science", OneOf("LM", "RM"), "TM"),
     ("Iron Smelting - Other", "Yellow Science", OneOf("LM", "RM"), "TL"),
     ("Plastic", "Yellow Science", "MM", "MM"),
-    ("Copper Smelting - LDS", "Yellow Science", "RM", "TR"),
+    ("Copper Smelting - Other", "Yellow Science", "RM", "TR"),
     ("Battery", "Yellow Science", "MM", "TL"),
     ("Blue Circuit Assembly", "Yellow Science", "MM", "TM"),
 
-    ("Steel Smelting - Purple", "Purple Science", OneOf("LM", "RM"), "TL"),
+    # ("Steel Smelting - Purple", "Purple Science", OneOf("LM", "RM"), "TL"),
+    # ("Iron Smelting - Other", "Purple Science", "RM", "TL"),
+    # ("Stone Mine", "Purple Science", "RM", "TL"),
+    # ("Stone Smelting", "Purple Science", "RM", "TM"),
+    # ("Red Circuit - Other", "Purple Science", "LM", "TM"),
+    # ("Green Circuit Assembly - Other", "Purple Science", "BM", "TM"),
+    ("Steel Smelting - Other", "Purple Science", OneOf("LM", "RM"), "TL"),
     ("Iron Smelting - Other", "Purple Science", "RM", "TL"),
     ("Stone Mine", "Purple Science", "RM", "TL"),
     ("Stone Smelting", "Purple Science", "RM", "TM"),
@@ -730,8 +766,11 @@ connections = [
 
     Connection("Solid Fuel", "Power Plant", "MM", "MM", 0.5),
 
+    # ("Green Circuit Assembly - Other", "Rocket Control Unit", "BM", OneOf("BM", "TM")),
+    # ("Red Circuit - RCU", "Rocket Control Unit", "LM", OneOf("BM", "TM")),
+    # ("Blue Circuit Assembly", "Rocket Control Unit", "MM", OneOf("BM", "TM")),
     ("Green Circuit Assembly - Other", "Rocket Control Unit", "BM", OneOf("BM", "TM")),
-    ("Red Circuit - RCU", "Rocket Control Unit", "LM", OneOf("BM", "TM")),
+    ("Red Circuit - Other", "Rocket Control Unit", "LM", OneOf("BM", "TM")),
     ("Blue Circuit Assembly", "Rocket Control Unit", "MM", OneOf("BM", "TM")),
 
     ("Water", "Concrete", "MM", "MM"),
@@ -749,6 +788,7 @@ connections = [
     ("Steel Smelting - Other", "Rocket Silo Assembler", OneOf("LM", "RM"), "MM"),
 
     ("Rocket Fuel", "Rocket", "MM", "MM"),
-    ("Low Density Structure", "Rocket", "MM", "MM"),
-    ("Rocket Control Unit", "Rocket", "MM", "MM"),
+    # ("Low Density Structure", "Rocket", "MM", "MM"),
+    ("Yellow Science", "Rocket", "TM", "MM"),
+    ("Rocket Control Unit", "Rocket", "BM", "MM"),
 ]
